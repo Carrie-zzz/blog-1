@@ -1,1 +1,268 @@
-1
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<script type="text/javascript">
+			let colors = ["blue","red","green"];
+			let directUrls=[
+				{
+					name:"chrom插件", 
+					links:
+					[
+						{ contextPath:"https://github.com/jinliming2/Chrome-Charset/releases", port:1, content:"charset" ,type:3},
+						{ contextPath:"http://test.sinter.cn/", port:1, content:"统一工具" ,type:3},
+
+					]
+				}	
+			];
+
+		</script>
+
+		<!--内部代码 -->
+		<script type="text/javascript">
+				function genList(list){
+				   let divUrlContent = document.getElementById("divUrlContent");
+				   for (var i = 0; i < list.length; i++) {
+		   				var item  =  list[i];
+		   				var para = document.createElement("h3");
+		   				para.innerHTML = item.name;
+		   				divUrlContent.appendChild(para);
+		   				var div = document.createElement("div");
+					 	for (var j = 0; j < item.links.length; j++) {
+					 		var l = item.links[j];
+					 		console.log(l);
+					 		console.log(l.type);
+					 		if(l.type==1){
+					 			div.innerHTML+="<button class='action-button shadow animate "+colors[i%colors.length]+"' value='"+l.contextPath+"' port='"+l.port+"' onclick='goUrl(this)'>"+l.content+" </button>"	
+					 		}else if (l.type==2){
+					 			div.innerHTML+="<button class='action-button shadow animate "+colors[i%colors.length]+"' value='"+l.contextPath+"' port='"+l.port+"' onclick='getDirectory(this)'>"+l.content+" </button>"
+					 		}
+					 		else{
+					 			div.innerHTML+="<a class='action-button shadow animate "+colors[i%colors.length]+"' href='"+l.contextPath+"' port='"+l.port+"'  target='_blank'>"+l.content+" </a>"
+					 		}
+						}
+					 	divUrlContent.appendChild(div);
+					}
+			}
+		</script>
+		<!--页面加载-->
+		<script type="text/javascript">
+			window.onload=function()
+			{
+				genList(directUrls);
+			}
+		</script>
+	<body>
+
+		<div style="display:flex;flex-direction: column;justify-content:space-between" id="divUrlContent">
+			
+		</div>
+	</body>
+
+
+<style>
+		body {
+			padding: 50px;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+		}
+		
+		.animate {
+			transition: all 0.1s;
+			-webkit-transition: all 0.1s;
+		}
+		
+		.action-button {
+			position: relative;
+			padding: 10px 40px;
+			margin: 0px 10px 10px 0px;
+			float: left;
+			border-radius: 10px;
+			font-family: 'Pacifico', cursive;
+			font-size: 25px;
+			color: #FFF;
+			text-decoration: none;
+		}
+		
+		.blue {
+			background-color: #3498DB;
+			border-bottom: 5px solid #2980B9;
+			text-shadow: 0px -2px #2980B9;
+		}
+		
+		.red {
+			background-color: #E74C3C;
+			border-bottom: 5px solid #BD3E31;
+			text-shadow: 0px -2px #BD3E31;
+		}
+		
+		.green {
+			background-color: #82BF56;
+			border-bottom: 5px solid #669644;
+			text-shadow: 0px -2px #669644;
+		}
+		
+		.yellow {
+			background-color: #F2CF66;
+			border-bottom: 5px solid #D1B358;
+			text-shadow: 0px -2px #D1B358;
+		}
+		
+		.action-button:active {
+			transform: translate(0px, 5px);
+			-webkit-transform: translate(0px, 5px);
+			border-bottom: 1px solid;
+		}
+		
+		//////////////////////////////////////////////////////////////////////////////
+		@-webkit-keyframes cardEnter {
+			0%,
+			20%,
+			40%,
+			60%,
+			80%,
+			100% {
+				transition-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+			}
+			0% {
+				opacity: 0;
+				-webkit-transform: scale3d(0.3, 0.3, 0.3);
+			}
+			20% {
+				-webkit-transform: scale3d(1.1, 1.1, 1.1);
+			}
+			40% {
+				-webkit-transform: scale3d(0.9, 0.9, 0.9);
+			}
+			60% {
+				opacity: 1;
+				-webkit-transform: scale3d(1.03, 1.03, 1.03);
+			}
+			80% {
+				-webkit-transform: scale3d(0.97, 0.97, 0.97);
+			}
+			100% {
+				opacity: 1;
+				-webkit-transform: scale3d(1, 1, 1);
+			}
+		}
+		
+		@keyframes cardEnter {
+			0%,
+			20%,
+			40%,
+			60%,
+			80%,
+			100% {
+				transition-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+			}
+			0% {
+				opacity: 0;
+				-webkit-transform: scale3d(0.3, 0.3, 0.3);
+				transform: scale3d(0.3, 0.3, 0.3);
+			}
+			20% {
+				-webkit-transform: scale3d(1.1, 1.1, 1.1);
+				transform: scale3d(1.1, 1.1, 1.1);
+			}
+			40% {
+				-webkit-transform: scale3d(0.9, 0.9, 0.9);
+				transform: scale3d(0.9, 0.9, 0.9);
+			}
+			60% {
+				opacity: 1;
+				-webkit-transform: scale3d(1.03, 1.03, 1.03);
+				transform: scale3d(1.03, 1.03, 1.03);
+			}
+			80% {
+				-webkit-transform: scale3d(0.97, 0.97, 0.97);
+				transform: scale3d(0.97, 0.97, 0.97);
+			}
+			100% {
+				opacity: 1;
+				-webkit-transform: scale3d(1, 1, 1);
+				transform: scale3d(1, 1, 1);
+			}
+		}
+		
+		.card {
+			-webkit-animation: cardEnter 0.75s ease-in-out 0.5s;
+			animation: cardEnter 0.75s ease-in-out 0.5s;
+			-webkit-animation-fill-mode: both;
+			animation-fill-mode: both;
+			max-width: 250px;
+			padding: 20px;
+			background-color: #fff;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+			margin: 20px auto;
+			opacity: 0;
+		}
+		/* Individual Controls
+ ------------------------------------------------------------- */
+		
+		.radio {
+			display: inline-block;
+			padding-right: 20px;
+			font-size: 18px;
+			line-height: 49px;
+			cursor: pointer;
+		}
+		
+		.radio:hover .inner {
+			-webkit-transform: scale(0.5);
+			transform: scale(0.5);
+			opacity: .5;
+		}
+		
+		.radio input {
+			height: 1px;
+			width: 1px;
+			opacity: 0;
+		}
+		
+		.radio input:checked+.outer .inner {
+			-webkit-transform: scale(1);
+			transform: scale(1);
+			opacity: 1;
+		}
+		
+		.radio input:checked+.outer {
+			border: 3px solid #f08b3b;
+		}
+		
+		.radio input:focus+.outer .inner {
+			-webkit-transform: scale(1);
+			transform: scale(1);
+			opacity: 1;
+			background-color: #e67012;
+		}
+		
+		.radio .outer {
+			height: 20px;
+			width: 20px;
+			display: block;
+			float: left;
+			margin: 10px 9px 10px 10px;
+			border: 3px solid #0c70b4;
+			border-radius: 50%;
+			background-color: #fff;
+		}
+		
+		.radio .inner {
+			transition: all 0.25s ease-in-out;
+			height: 16px;
+			width: 16px;
+			-webkit-transform: scale(0);
+			transform: scale(0);
+			display: block;
+			margin: 2px;
+			border-radius: 50%;
+			background-color: #f08b3b;
+			opacity: 0;
+		}
+	</style>
+</html>
+
+
+	
