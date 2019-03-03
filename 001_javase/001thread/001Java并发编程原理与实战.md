@@ -1,0 +1,438 @@
+# 大纲 #
+
+
+
+
+----------
+
+----------
+
+----------
+# 内容 #
+05. 线程状态
+	* 初始化
+		* 
+	* 就绪 runnable
+		* stop()->dead
+	* 运行 running
+		* sleep()->sleeping
+		* wait()->waiting
+		* blocks for io, enter synchronized code -> blocked
+	* 死亡 dead
+
+06 线程创建
+1. 继承Thread
+2. 实现Runnable接口
+3. 匿名内部类
+4. 带返回值的线程
+	1. 实现Callable<T> 接口
+	 		T call()
+	2. task = new  FutureTask<T>  ( Callable ) 
+	3. t = Thread(FutureTask);  t.start();
+	4. T result = task.get();
+5. 定时器Timer  TimerTask impl Runnable   , quartz
+	Timer timer =  new Timer();
+	timer.schedule(timerTask,delay,period);
+	abstract TimerTask implements Runnable
+
+6. 线程池
+	Executor threadPool = Executors.
+				newCachedThreadPool		自动回收,扩容线程池	
+				newFiexedThreadPool		固定容量
+	threadPool.execute(runnable);
+	threadPool.shutdown();
+7. Lambda 
+
+8. spring
+	@EnableAsync   @Async 注解  
+
+11. 线程问题
+	1. 线程安全性问题
+		1. 产生条件
+			1. 多个线程
+			2. 同一个资源
+			3. 资源读写操作(非原子操作,一条字节码以上)
+				* 多个线程,读写同一个变量( i 自动增长案例)
+				* return value++;
+		2. 解决
+			1. 添加 synchronized,(串行,新能不好)
+			2. 锁lock 读写锁,condition
+			3. xkey
+			4. atomic
+	2. 活跃性问题
+		1.  死锁: 一人一根筷子 (jconsole 检测死锁 工具,cmd打开)
+		2.  饥饿: 线程优先级,有的人饿死
+			* 高优先级抢占低优先级的cpu时间片(设置合理优先级)
+			* 同步代码块,低优先级永久阻塞在等待进入代码块的状态(永久等待)(使用锁代替,synchronized)
+			* 等待wait线程,永远不会唤醒
+
+			* 设置合理优先级
+			* 使用锁代替 synchronized
+		3.  活锁: 过独木桥互相谦让
+	3. 性能问题
+		1. 多线程并不一定快,不一定多核
+		2. 线程切换,切换上下文(浪费cpu资源),相当于翻译
+
+13.  查看**字节码**
+	1.  javap -verbose xx.class 
+	2.  类实例放在堆中,线程共享
+	3.  程序计数器线程独享
+	
+	1. return value++ 
+		1. 线程读取内存value值
+		2. 线程缓存++
+		3. 更新内存value值
+
+
+		1. 多个线程
+		2. 同一个资源
+		3. 资源读写操作(非原子操作,一条字节码以上)
+
+
+14. synchronized原理
+	1. 内置锁:java每一个对象都可以用作同步锁,这样的锁称之为内置锁
+	2. 互斥锁:一个线程进去,另外线程不能进去
+	3. 修饰
+		1. 修饰普通方法:锁是当前类的对象(实例)
+		2. 修饰静态方法:锁是当前类的class字节码对象
+		3. 代码块
+
+15. synchronized深层次原理
+	1. 字节码
+		1. 进入: monitorEnter
+		2. synchronized
+		2. 出去: monitorExit
+	2. javap xx.class 查看字节码
+	3. 对象头(存放锁信息)
+		1. 每个对象的锁信息,存在对象头中
+		2. 头信息
+			1. markWord : 
+				1. hash值,
+				2. 锁信息,
+					1. 线程id,
+					2. epoch
+					3. 对象的分代年龄
+					4. 是否是偏向锁
+					5. 锁标志位
+			2. class metadata address
+				1. 对象的类型 指向地址
+			3. array length(数组独有)
+	4.类型
+		1. 偏向锁(单个线程,一直把持锁)
+			1. 每次获取和释放会浪费资源,
+			2. 很多情况下,竞争锁不是由于多个线程,而是由一个线程在使用
+			3. markword记录
+				1. 线程id
+				2. epoch
+				3. 对象的分代年龄
+				4. 是否是偏向锁
+				5. 锁标志位
+			4.  过程
+				1. 当线程第一次进入,偏向锁记录线程id,获取锁,线程出去不释放锁
+				2. 当线程再次进入,检查线程id,如果一致就不用去获取,线程不用获取,释放了
+				3. 偏向锁等待其他竞争线程出现,获取锁对象的线程才会释放线程
+		2. 轻量级锁
+			1. 多个线程,同时能获取锁(提前获取markword信息)
+				2. 执行同步代码之前,jvm会在当前线程的栈堆中创建存储锁记录的空间
+				1. 虚拟机栈(线程独有的),存储栈针,每个方法执行都会创建栈针,存储方法执行信息,方法进栈出栈
+				3. 对象头中的markword复制到锁记录空间中,开始竞争锁,
+				4. 竞争成功,修改 锁标志位  轻量级锁,然后开始执行同步代码,
+				5. 其他线程修改锁标识位失败,自旋重复执行,会升级成重量级锁
+				6. 第一个线程执行完毕,释放锁,唤醒第二个线程执行
+		3. 重量级锁
+			1. 一个1.6之前的synchronized,一个线程进去,其他等待
+
+16. 单例和线程安全问题
+	1. 恶汉:直接new(在多线程下,不满足:共享资源非原子性操作),
+		1. 没有线程安全问题,
+		2. 不管用不用,加载的时候就实例化,堆内存开辟空间,内存,浪费
+		3. 电脑程序,用的时候在打开
+	2. 懒汉:使用时候new,有线程安全问题(非原子操作)
+					if(instance == null) {  //读
+						instance = new Singleton2();  // 写
+					}
+		1. 同步锁加载方法上面,其他线程多自旋(相当于while true 消耗资源)等待
+		2. if sync if 判断,但是虚拟机可能 指令重排序(添加关键字 volatile),导致问题 ???
+			1. 先执行1-3-2
+					public class Singleton2 {
+						private Singleton2() {}
+						private static volatile Singleton2 instance;
+						/**
+						 * 双重检查加锁
+						 * 
+						 * @return
+						 */
+						public static Singleton2 getInstance () {
+							// 自旋   while(true)
+							if(instance == null) {
+								synchronized (Singleton2.class) {
+									if(instance == null) {
+										instance = new Singleton2();  // 指令重排序
+										// 申请一块内存空间   // 1
+										// 在这块空间里实例化对象  // 2
+										// instance的引用指向这块空间地址   // 3 instance!=null
+									}
+								}
+							}
+							return instance;
+						}
+						// 多线程的环境下
+						// 必须有共享资源
+						// 对资源进行非原子性操作
+					}
+
+	3. 构造私有
+	4. 提供获取当前对象方法  getInstance
+
+
+17. 锁
+	1. 非重入锁
+		1. 只允许一个线程进入
+	2. 重入锁:一个线程获取当前锁后,没有释放前又遇到当前锁,可以直接进入,synchronized  locak
+			public synchronized void a () {
+				System.out.println("a");
+			}
+			public synchronized void b() {
+				System.out.println("b");
+			}
+
+	3. 自旋锁:空转cpu,等待执行
+		* 所有线程执行完毕后打印ok
+			* 主线程自旋等待
+
+				while(Thread.activeCount() != 1) {
+				// 自旋
+				}
+				System.out.println("所有的线程执行完毕了...");
+	4. 死锁 
+		jconsole
+	5. jconsole 查看
+			private Object obj1 = new Object();
+			private Object obj2 = new Object();
+			public void a () {
+				synchronized (obj1) {
+						Thread.sleep(10);
+					synchronized (obj2) {
+						System.out.println("a");
+					}
+				}
+			}
+			
+			public void b () {
+				synchronized (obj2) {
+						Thread.sleep(10);
+					synchronized (obj1) {
+						System.out.println("b");
+					}
+				}
+			}
+			
+			public static void main(String[] args) {
+				Demo3 d = new Demo3();
+				new Thread(new Runnable() {
+					public void run() {
+						d.a();
+					}
+				}).start();
+				new Thread(new Runnable() {
+					public void run() {
+						d.b();
+					}
+				}).start();
+			}
+
+18. volatile( 易变的，不稳定的)
+	1. 功能
+		1. 对象变量,类变量 可见性 : 每次更新对其他线程立马可见(,但不能包装原子操作)
+			1. 每次访问变量时,不从缓存中获取,而是从内存中获取
+			2. 并不能保证原子性(及时更新,容易导致另外线程跳不出循环,所以多线程计数必须使用锁)
+		2. 操作不会造成阻塞
+		2. 防止指令重排
+	2. 轻量级锁,在线程之间可见
+		* 可见(一个线程修改,另外线程能够读到修改后的值)
+			* 多个线程
+			* 同一把锁
+			* 
+		* synchronized线程互斥,也是线程可见的
+	2. 底层实现
+		1. 增加了一个lock执行:
+			1. 多处理器,将当前处理器缓存的内容写到系统内存
+			2. 写回到内存的操作,会使其他cpu缓存内容失效,需要重新获取,保证数据一致性
+			3. 磁盘  内存  cpu缓存
+	3. 硬盘->内存->cpu缓存
+	4. sync比较
+		1. volatile只能保证变量的可见性,不能保证原子性
+		2. volatile使用简单的方法,eg:get set,更简洁,轻量一些
+		3. synchronized可以替代volatile,反之不能
+
+19. 原子类(**jdk5**出现) 
+	1. 原子更新基本类型
+	2. 原子更新数组
+	3. 原子更新抽象类
+	4. 原子更新字段
+
+	1. 原子更新基本类型
+		1. AtomicInteger(initValue)   
+			1. i.getAndIncrement();      i++
+			2. i.incrementAndGet();		++i
+			3. i.getAndDecrement();		i--
+			4. getAndAdd(int); 增加减少等操作
+			5. getAndUpdate(int);
+		2. 底层使用  native  unsafe
+		3. pre 和 next 不相等(可能被其他线程修改) while 循环  ,相等者返回
+				int pre  ,next ; 
+				do{	
+					pre = get();
+					next = updateFunction.applyAsInt(pre);
+				}while(!  compareAndSet(pre,next));
+	2. 原子更新数组
+		1. AtomicIntegerArray(int[])  
+			1. is.getAndAdd(index,value);
+	3. 原子更新抽象类
+		1. AtomicReference<T>()
+			1. 对T,原子操作,而不是T里面的属性原子
+	4. 原子更新字段
+		1. AtomicIntegerFieldUpdate<T> u =AtomicIntegerFieldUpdate.newUpdater(clazz,"filedName")
+			1. u.getAndIncrement(t);
+			2. t.getFiledName();
+		2. 字段必须 volatile 修饰
+20. lock接口 (**jdk5**出现)  
+	1. synchronized
+	2. volatile: 可见性ok,,,非原子性不能解决
+	3. atomic
+	4. 接口:(对synchronized简单分装)
+		1. lock
+		2. unlock
+		3. trylock->boolean
+		4. lockInterruptibly
+	5. java.util.concurrent.locks.*
+		1. ReentrantLock(boolean)	 实现类
+		2. StampedLock 1.8
+		3. ReadWriteLock
+		4. Condition
+		5. AbstractQueueSynchronizer  1.5
+	6. 特点
+		1. Lock  lock = new ReentrantLock();  //默认非公平
+		2. lock.lock();
+		3. lock.unlock();
+	7. 特点
+		1. 需要自己现实的获取和释放锁(繁琐,更加灵活)
+		2. 简单实现公平性
+		3. 对synchronized的包装,类似一个工具提供很多便捷操作
+		4. 非阻塞的获取锁  trylock
+		5. 获取锁,能被中断
+		6. 能超时获取锁
+	
+21. 自己实现一个lock
+	1. 实现Lock接口
+	2. 实现lock方法
+	3. 实现unlock方法
+
+	不能到重入,a调用b,b在lock时候一直等待   
+		1. 全局变量
+			1. isLock = false;
+		2. 实现lock方法
+			1. 在方法上添加synchronized
+			2. 判断变量isLock  while(isLock) wait (第二个线程)
+			3. 改变isLock = true;
+		3. 实现unlock方法 
+			1. 在方法上添加synchronized
+			2. 改变isLock = false;
+			3. notify  
+		
+
+	重入方式
+		1. 全局变量
+			1. isLock
+			2. lockTh当前线程
+			3. lockCount 重入次数,方便unlock
+		2. 实现lock方法
+			1. 在方法上添加synchronized
+			2. 获取当前线程  Thread cThread = Thread.currentThread();
+			2. while 判断变量isLock==true 和 判断当前进入线程和全局变量的线程!=   cThread!= lockTh
+				1.   wait
+			3. 改变isLock=true
+			4. 改变全局变量 当前线程
+			5. 改变全局变量 重入次数  lockCount++;
+		3. 实现unlock方法
+			1. 获取当前线程  Thread cThread = Thread.currentThread();
+			2. if当前进入线程==全局线程 cThread==lockTh 
+				1. 全局 重入次数  lockCount--
+				2. 当全局重入次数lockCount == 0
+					1. 改变 isLock=false  
+					2. notify
+22. AQS  Abstractcynchronizer  AbstractQueuedSynchronizer
+
+
+23. 
+
+
+
+25. 读写锁  
+	1. 写锁:排他锁,效率低,只能有一个线程操作
+	2. 读锁:共享锁share,效率稍高,多个线程共同进入
+
+	1. ReentrantReadWriteLock
+		1. readLock	
+		2. writeLock
+			1. lock
+			2. unlock
+
+	1. 读写互斥
+	2. 写写互斥
+	3. 读读不互斥,很快
+		2. a.await();
+	
+26. 读写锁实现
+
+
+27. 读写锁-锁降级(写->读),
+	* 写锁里面嵌套读锁,嵌套在写完毕,释放写锁之前
+ 
+28. 总结
+
+29. 线程之间通行 wait,notify
+	1. 在syn里面
+	2. 谁syn,谁调用wait,notify
+	3. notify 随机叫醒
+
+30. 生产者消费者
+
+31. condition
+	1. 能够制定,叫醒条件
+	2. 步骤
+		1. 创建ReentrantLock
+		2. lock.创建Condition
+		3. b.signal
+
+
+37. CountDownLatch 
+	1. await
+	2. countDown()   -1
+	3. getCount()
+	4. 当计数器==0的时候,唤醒所有await的线程
+38. CyclicBarrier 循环的 栅栏
+	1. 当达到技术点count个数的时候触发
+	2. dowait
+	3. await
+	4. 
+39. Semaphore	信号
+	1. 指定信号个数
+	2. 
+40. Exchanger  2个线程 数据对比 
+
+
+42. future
+	1. FutureTask 
+		1. get
+	2. Callable
+
+
+
+
+1. CopyOnWriteArrayList 写少读多场景  ,写的时候加锁 lock了,否则copy出多个list
+2. ReadWriteLock 读写锁, 写与写互斥,读写互斥,读与读不互斥 读与读之间可以并发,读多写少可以提高效率
+3. ConcurrentHashMap 读写都加锁
+4. 
+
+
