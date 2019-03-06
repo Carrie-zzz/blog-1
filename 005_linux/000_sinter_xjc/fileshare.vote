@@ -1,0 +1,48 @@
+samba setup:
+   http://blog.csdn.net/yuzhihui_no1/article/details/41597043
+   http://www.centoscn.com/CentosServer/ftp/2015/0929/6248.html 用户名密码配置
+   http://yuanbin.blog.51cto.com/363003/115761/
+   
+   
+     vi /etc/samba/smb.conf  配置
+	 
+	
+	 
+	 service smb restart 
+   client:
+     yum install cifs-utils
+	 
+	 mount -t cifs 192.168.10.111:/sharefile /sharefile
+	 mount -t cifs -o username=Administrator,password=123456 192.168.10.111:/sharefile	 /sharefile
+	 
+    /etc/fstab
+	//192.168.10.111/sharefile /sharefile cifs    0       0
+	
+nfs setup:
+     vi /etc/exports  配置
+   client:
+     yum install -y nfs-utils   
+     mount -t nfs 192.168.10.111:/sharefile  /sharefile 加载
+	 umount /sharefile
+	 
+	 
+设置用户访问：
+a、配置smb.conf,添加如下
+[time]
+        comment = Ashes Of Time
+        path = /share/time
+        valid users = zhi
+        write list = zhi
+        printable = no
+        create mask = 0755
+        directory mask = 0755
+ 
+b、建立共享目录、添加相应用户和组
+# mkdir -p /share/time
+# groupadd admin
+# useradd zhi -s /sbin/nologin
+# cd /share/time
+# echo "12345" > abc.txt
+# pdbedit -a -u zhi              ##新建Samba用户
+# pdbedit -L               ##查看Samba用户列表
+# systemctl restart smb nmb        ##重启Samba

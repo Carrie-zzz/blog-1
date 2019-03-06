@@ -1,0 +1,52 @@
+技术框架:
+  微服务:       spring cloud / dubbo + spring
+  ORM:          MyBatis / hibernate
+  接口文档:     Swagger2
+  缓存:         redis / memcached
+  图片存储:     七牛云/阿里云OSS/fastDFS/hadoop hdfs
+  任务调度：    Spring Scheduled / Quartz 
+  消息中间件:   kakfa/RabbitMQ
+  单点登录SSO:  CAS(spring shiro、Spring Security CAS)/Smart/OpenAM/简单实现
+  异常日志收集分析: Logstash + elasticsearch + kibana / flume+kafka+storm+redis+mongodb(hdfs)
+  操作日志:     Mongodb
+  搜索:         Solr / ElasticSearch
+  构建项目工具: Maven / gardle
+  持续集成:     Jenkins + nexus
+  源码管理:     gitlab
+  高可用:       keepalived
+  负载均衡:     Nginx(lvs、haproxy) 
+  数据库:       mysql(mycat) + mongodb(postgresql)
+  数据库中间件: sharding jdbc
+  测试:         压测:jmeter（soapui/loadrunner); 注入:sqlmap; 自动化及其它: selenium2、appium、appscan、TestNG(JUnit4)、postMan; EclEmma
+  文档管理:     svn
+  需求及bug:    禅道 / jira
+  部署发布:     docker + 灰度发布(ABTesingGateway / nginx+lua) + docker compose 
+       zabbin/ nagios
+
+其它（参考目前使用的）:
+  信息推送:     腾讯信鸽
+  短信息:       互亿无线
+  即时聊天IM:   环信
+  App统计：     友盟+(友盟+CNZZ+缔元信) / 极光 
+  第三方分享：  友盟 / 极光 
+  第三方支付:   微信、支付宝、银联
+ 
+
+  平台: 阿里云 / esxi6(openstack)
+  系统: centos7
+  http抓包: Fiddler 4
+  数据备份: mysql xtrabackup /
+  数据同步: 实时: 阿里otter / oracle golden gate / MySQL Replication; 离线:sqoop2 / 阿里datax
+
+Web技术：
+  图形:  ECharts / highcharts  / d3.js 
+  WebUi: vue + element + vuex + vue-router + axios + vue-i18n(React/AngularJS) / jquery (easyui/bootstrap/layui ) / extjs
+         / smartadmin模板
+  其它:  nodejs、scss、webpack、mock.js
+
+  人脸认别， 用于登录.
+ 
+服务划分:
+  单点登陆SS0服务,日志服务,定时调度服务,搜索服务,
+  图片存储服务,支付服务,消息推送服务,短信服务,第三方登陆服务,
+  微信接口服务,智能柜服务,报表服务,订单服务，用户服务，数据服务

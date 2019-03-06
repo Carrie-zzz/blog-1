@@ -1,0 +1,141 @@
+code:
+  https://github.com/apache/spark.git
+  
+setup:
+  http://blog.csdn.net/yt7589/article/details/62039555
+  http://www.cnblogs.com/LazyJoJo/p/6436739.html
+  http://blog.csdn.net/lsshlsw/article/details/54951005 yarn部署
+  http://blog.csdn.net/aaronhadoop/article/details/43846261 读写hive
+
+cmd:
+  $SPARK_HOME/sbin/start-all.sh
+  $SPARK_HOME/sbin/stop-all.sh
+  $SPARK_HOME/sbin/start-history-server.sh
+  $SPARK_HOME/sbin/stop-history-server.sh
+
+  $SPARK_HOME/bin/run-example org.apache.spark.examples.SparkPi 测试
+  $SPARK_HOME/bin/spark-shell
+  
+  standlone 模式 不需要haddop对应的包
+  yarn模式 spark下start.sh等不需要启动
+  yarn client 主要用于调试
+
+  
+  本地模式:         $SPARK_HOME/bin/spark-submit --master local --class org.apache.spark.examples.SparkPi $SPARK_HOME/examples/jars/spark-examples_2.11-2.1.0.jar
+  standlone模式:    $SPARK_HOME/bin/spark-submit --master spark://spark-master:7077 --class org.apache.spark.examples.SparkPi $SPARK_HOME/examples/jars/spark-examples_2.11-2.1.0.jar
+  yran client模式:  $SPARK_HOME/bin/spark-submit --master yarn --class org.apache.spark.examples.SparkPi $SPARK_HOME/examples/jars/spark-examples_2.11-2.1.0.jar
+  yran cluster模式: $SPARK_HOME/bin/spark-submit --master yarn --deploy-mode cluster --class org.apache.spark.examples.SparkPi $SPARK_HOME/examples/jars/spark-examples_2.11-2.1.0.jar
+
+  //自写调试
+  $SPARK_HOME/bin/spark-submit --master spark://spark-master:7077 --class "demo.spark.java.WordCount" /sharefile/demo-spark-0.0.1.jar hdfs://hadoop-master:9000/demo/wordcount.txt
+  $SPARK_HOME/bin/spark-submit --master yarn --deploy-mode cluster --class "demo.spark.java.WordCount" /sharefile/demo-spark-0.0.1.jar hdfs://hadoop-master:9000/demo/wordcount.txt  hdfs://hadoop-master:9000/demo/output/wc_spark_`date '+%Y%m%d%H%M%S'`
+  $SPARK_HOME/bin/spark-submit --master yarn --deploy-mode cluster  /sharefile/demo-spark-0.0.1.jar hdfs://hadoop-master:9000/demo/wordcount.txt
+
+  //streaming
+  $SPARK_HOME/bin/run-example org.apache.spark.examples.streaming.NetworkWordCount localhost 9999  
+  $SPARK_HOME/bin/spark-submit --master local[2] --class org.apache.spark.examples.streaming.NetworkWordCount  $SPARK_HOME/examples/jars/spark-examples_2.11-2.1.0.jar localhost 9999  
+  $SPARK_HOME/bin/spark-submit --master yarn --class org.apache.spark.examples.streaming.NetworkWordCount  $SPARK_HOME/examples/jars/spark-examples_2.11-2.1.0.jar big01 9999  
+  $SPARK_HOME/bin/spark-submit --master yarn --deploy-mode cluster --class org.apache.spark.examples.streaming.NetworkWordCount  $SPARK_HOME/examples/jars/spark-examples_2.11-2.1.0.jar big01 9999  
+  $SPARK_HOME/bin/spark-submit --master spark://spark-master:7077 --class org.apache.spark.examples.streaming.NetworkWordCount  $SPARK_HOME/examples/jars/spark-examples_2.11-2.1.0.jar big01 9999  
+
+  
+ nc -lk 9999
+  nc big01 9999 < cip.txt
+  
+url:
+  http://192.168.10.107:8080/
+  http://192.168.10.107:18080/
+  
+  
+study:
+  通信框架AKKA  SCALA语言 master 主节点 工作节点  RDD 弹性分布式数据库
+  
+  数据源-RDD-变换-行动-输出
+  spark sql, sqark streaming
+  
+  standalone yarn Mesos
+  
+  
+eclipse-scala:
+  m2e-scala:  http://alchim31.free.fr/m2e-scala/update-site/
+  scala-ide: 安装
+  
+winutils：https://github.com/srccodes/hadoop-common-2.2.0-bin/tree/master/bin
+
+
+问题1、提示hadoop native not found
+
+   export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+   export LD_LIBRARY_PATH=$HADOOP_COMMON_LIB_NATIVE_DIR:$LD_LIBRARY_PATH
+   
+问题2、ERROR client.TransportClient: Failed to send RPC 4688442384427245199 to /xxx.xxx.xxx.xx:42955: java.nio.channels.ClosedChannelException
+java.nio.channels.ClosedChannelException
+
+  java8的问题
+  
+yarn-site.xml 加入
+
+<property>
+    <name>yarn.nodemanager.pmem-check-enabled</name>
+    <value>false</value>
+</property>
+
+<property>
+    <name>yarn.nodemanager.vmem-check-enabled</name>
+    <value>false</value>
+</property>
+
+问题3、打开太多文件问题
+
+   /etc/security/limits.conf 加入
+   
+* soft nofile 102400
+* hard nofile 409600
+
+config hive:
+1、检测是否支持hive
+   ./spark-shell
+   import org.apache.spark.sql.hive.HiveContext
+   
+2、创建 $SPARK_HOME/conf/hive-site.xml
+
+<configuration>    
+<!--Spark SQL CLI-->  
+    <property>    
+        <name>hive.metastore.uris</name>    
+        <value>thrift://hive-metastore:9083</value>    
+    </property>    
+  
+<!--Thrift JDBC/ODBC server-->  
+    <property>  
+        <name>hive.server2.thrift.min.worker.threads</name>  
+        <value>5</value>  
+    </property>  
+  
+    <property>  
+        <name>hive.server2.thrift.max.worker.threads</name>  
+        <value>500</value>  
+    </property>  
+  
+    <property>  
+        <name>hive.server2.thrift.port</name>  
+        <value>10000</value>  
+    </property>  
+  
+    <property>  
+        <name>hive.ser:ver2.thrift.bind.host</name>  
+        <value>hive-metastore</value>  
+    </property>  
+</configuration>
+
+$HIVE_HOME/bin/hive --service metastore 2>&1 >> /var/hivemetastore.log &
+
+
+启动spark ThriftServer服务器
+$SPARK_HOME/sbin/start-thriftserver.sh --master spark://spark-master:7077 --executor-memory 3g 
+$SPARK_HOME/bin/beeline
+!connect jdbc:hive2://hive-metastore:10000 
+hive / 123456
+!quit
+
+

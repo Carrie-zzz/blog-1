@@ -1,0 +1,309 @@
+vi /etc/hosts
+192.168.20.222 elk01
+192.168.20.223 elk02
+192.168.20.224 elk03
+
+ElasticSearch:
+  #user
+  groupadd es
+  useradd es -g es -p es
+  chown -R es:es /opt/
+  chown -R es:es /data/backup/elk/
+  su es
+  
+  #max file descriptors [4096] for elasticsearch process is too low, increase to at least [65536]  
+  vi /etc/security/limits.conf
+  * soft nofile 65536 
+  * hard nofile 65536
+  * soft nproc 2048  
+  * hard nproc 4096  
+
+
+  #max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
+  vi /etc/sysctl.conf 
+  vm.max_map_count=655360
+  fs.file-max=655360  
+  
+  #使系统配置生效
+  sysctl -p
+
+
+  #修改系统配置
+  mkdir -p /data/elk/elasticsearch/logs   #日志存放路径
+  mkdir -p /data/elk/elasticsearch/data   #数据存放路径
+  chown -R es:es /data/elk/elasticsearch  #授权
+  
+  vi /opt/elasticsearch-6.2.4/config/elasticsearch.yml
+  
+  #绑定的ip地址
+  network.host: 0.0.0.0
+  #设置对外服务的http端口，默认为9200  
+  http.port: 9200
+  # 设置节点间交互的tcp端口,默认是9300   
+  transport.tcp.port: 9300  
+  #设置为true来锁住内存。因为内存交换到磁盘对服务器性能来说是致命的，当jvm开始swapping时es的效率会降低，所以要保证它不swap  
+  bootstrap.memory_lock: true
+  
+  #索引数据的存储路径  
+  path.data: /data/elk/elasticsearch/data  
+  #日志文件的存储路径  
+  path.logs: /data/elk/elasticsearch/logs
+  
+  
+  #集群的名称  
+  cluster.name: c_es6
+  #节点名称,其余两个节点分别为node-02 和node-03  
+  node.name: node-01  
+  #指定该节点是否有资格被选举成为master节点，默认是true，es是默认集群中的第一台机器为master，如果这台机挂了就会重新选举master  
+  node.master: true  
+  #允许该节点存储数据(默认开启)  
+  node.data: true 
+
+  #Elasticsearch将绑定到可用的环回地址，并将扫描端口9300到9305以尝试连接到运行在同一台服务器上的其他节点。  
+  #这提供了自动集群体验，而无需进行任何配置。数组设置或逗号分隔的设置。每个值的形式应该是host:port或host  
+  #（如果没有设置，port默认设置会transport.profiles.default.port 回落到transport.tcp.port）。  
+  #请注意，IPv6主机必须放在括号内。默认为127.0.0.1, [::1]  
+  discovery.zen.ping.unicast.hosts: ["elk01:9300", "elk02:9300", "elk03:9300"]  
+  #如果没有这种设置,遭受网络故障的集群就有可能将集群分成两个独立的集群 - 分裂的大脑 - 这将导致数据丢失  
+  #主结点数量的最少值 ,此值的公式为：(master_eligible_nodes / 2) + 1 ，比如：有3个符合要求的主结点，那么这里要设置为2
+  discovery.zen.minimum_master_nodes: 3  
+  
+  xpack.security.enabled:false
+  
+  vi /opt/elasticsearch-6.2.4/config/jvm.options
+  #默认是1g官方建议对jvm进行一些修改，不然很容易出现OOM,参考官网改参数配置最好不要超过内存的50%   
+  -Xms1g  
+  -Xmx1g  
+  
+  
+  #start
+  su - es -l -c "/opt/elasticsearch-6.2.4/bin/elasticsearch"
+  su - es -l -c "/opt/elasticsearch-6.2.4/bin/elasticsearch -d"  #后台启动
+  curl http://127.0.0.1:9200
+  curl http://127.0.0.1:9200/_search?pretty
+ 
+  #
+  http.cors.enabled: true
+  http.cors.allow-origin: "*"
+  http.cors.allow-credentials: true 
+  
+  #安装x-pack
+  ./bin/elasticsearch-plugin install file:///opt/x-pack-6.2.4.zip --batch #安装包安装
+  chown -R es:es /opt/elasticsearch-6.2.4
+  ./bin/elasticsearch-plugin install x-pack #网上安装
+  ./bin/x-pack/setup-passwords interactive #初始化密码
+  ./bin/elasticsearch-plugin remove x-pack #删除安装
+  
+  user:kibana,logstash_system,elastic / 123456
+  
+  破解:
+     https://blog.csdn.net/m0_37609579/article/details/80296057
+  
+  获取license
+  curl -XGET -u elastic 'http://192.168.20.220:9200/_license'
+  更新license
+  curl -XPUT -u elastic 'http://192.168.20.220:9200/_xpack/license?acknowledge=true' -H "Content-Type: application/json" -d @license.json
+
+  如果有多个节点，则每个节点都需要按这个命令进行license更新
+  
+  生成证书:
+    为您的弹性搜索集群创建一个证书颁发机构。
+    ./bin/x-pack/certutil ca
+	为集群中的每个节点生成证书和私钥。
+    ./bin/x-pack/certutil cert --ca elastic-stack-ca.p12
+  
+    xpack.security.transport.ssl.enabled: true
+    xpack.security.transport.ssl.verification_mode: certificate
+    xpack.security.transport.ssl.keystore.path: elastic-certificates.p12
+    xpack.security.transport.ssl.truststore.path: elastic-certificates.p12   
+	//证书放到config目录下
+	
+	
+  #安装Head
+  cd /opt
+  
+  yum -y install nodejs npm
+  yum -y install git
+  git clone https://github.com/mobz/elasticsearch-head.git
+  cd elasticsearch-head/
+  
+  npm install -g grunt-cli
+  npm install -g #权限问题加-g
+  npm run start
+  http://localhost:9100/
+  
+  后台启动:
+  cd /opt/elasticsearch-head/ && grunt server &
+  ps -ef | grep grunt
+  
+  #docker安装Head
+  docker run --restart=always -p 9100:9100 mobz/elasticsearch-head:5
+  
+  #Chrome插件安装Head
+  
+  --其它
+  analysis-ik ik分词器,中文分词 
+  elasticsearch-sql 
+ 
+Kibana:
+  vi ./config/kibana.yml
+  
+  #配置本机ip  
+  server.host: "0.0.0.0"  
+  #配置子目录
+  server.basePath: "/kibana"
+  #配置es集群url  
+  elasticsearch.url: "http://192.168.20.100:9200"
+  #中文汉化
+  https://github.com/anbai-inc/Kibana_Hanization
+  
+  
+  git clone https://github.com/anbai-inc/Kibana_Hanization.git
+  cd ./Kibana_Hanization
+  python main.py /opt/kibana-6.2.4
+  重启服务
+  
+  #安装x-pack
+  ./bin/kibana-plugin install file:///opt/x-pack-6.2.4.zip
+  
+  nohup  /opt/kibana-6.2.4/bin/kibana >/dev/null 2>&1 &
+  
+  curl http://localhost:5601/kibana
+  http://192.168.1.221:5601/kibana
+
+  查询kibana的PID
+     ps -ef | grep node
+	 
+  
+Logstash: 
+  ./logstash -f logstash.conf
+  ./logstash -f input-kafka.conf
+  
+  nohup /opt/logstash-6.2.4/bin/logstash -f /opt/logstash-config/input-tcp.conf --path.data=/data/logstash/tcp >/dev/null 2>&1 &  
+  nohup /opt/logstash-6.2.4/bin/logstash -f /opt/logstash-config/input-redis.conf --path.data=/data/logstash/redis >/dev/null 2>&1 &  
+  nohup /opt/logstash-6.2.4/bin/logstash -f /opt/logstash-config/input-kafka.conf --path.data=/data/logstash/kafka >/dev/null 2>&1 & 
+  nohup /opt/logstash-6.2.4/bin/logstash -f /opt/logstash-config/input-mysql.conf --path.data=/data/logstash/mysql >/dev/null 2>&1 & 
+  
+  xpack
+  ./logstash-plugin install file:///opt/x-pack-6.2.4.zip
+  
+  logstash.yml添加：
+  xpack.monitoring.elasticsearch.url: "http://192.168.20.100:80" 
+  xpack.monitoring.elasticsearch.username: "logstash_system" 
+  xpack.monitoring.elasticsearch.password: "123456"
+  xpack.monitoring.elasticsearch.path: "/es/"
+  
+  logstash-input-jdbc
+  Logstash Json 过滤器插件
+  Logstash-out-mongodb 插件说明
+	./bin/logstash-plugin list
+	./bin/logstash-plugin install logstash-output-mongodb
+	./bin/logstash-plugin install logstash-input-jdbc
+
+  
+Filebeat：
+   wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-6.2.4-linux-x86_64.tar.gz
+   
+   ./filebeat modules list
+   ./filebeat modules enable nginx
+   ./filebeat modules disable nginx
+   ./filebeat setup
+   
+   ./bin/elasticsearch-plugin install ingest-user-agent
+   ./bin/elasticsearch-plugin install ingest-geoip
+   
+   ./filebeat -e
+   nohup /opt/filebeat-6.2.4/filebeat -e -c /opt/filebeat-6.2.4/filebeat.yml >/dev/null 2>&1 &  
+   # -c filebeat.yml
+  
+https://www.cnblogs.com/zhyg/p/6994314.html
+https://doc.yonyoucloud.com/doc/logstash-best-practice-cn/get_start/introduction.html
+
+常用操作
+
+删除多个索引：
+  DELETE /index_one,index_two
+  DELETE /index_*
+删除全部索引:
+  DELETE /_all
+  DELETE /*
+查看大小:
+  GET /_stats
+  GET /mysql_accesslog,mysql_accesslog/_stats
+备份:  
+  在ES群集中是有replica的存在的,默认,一个索引会分成5个shard,每个shard有一个replica.
+  
+  共享文件存储介质
+  共享文件存储介质类型是fs，使用共享文件系统来存储快照。
+  假如共享文件存储介质挂载在/mount/back目录下，需要在elasticsearch.yml添加如下配置：
+  
+
+  1. 建立一个repository，用于存在备份数据
+    PUT _snapshot/my_backup_mysql
+    {
+       "type": "fs", 
+       "settings": {
+           "location": "/data/backup/elk/mysql" 
+       }
+    }
+	
+	PUT _snapshot/my_backup_all
+    {
+       "type": "fs", 
+       "settings": {
+           "location": "/data/backup/elk/all" 
+       }
+    }
+	
+	查看仓库的信息
+	GET _snapshot/my_backup_mysql
+	GET _snapshot/my_backup_all
+     
+    备份文件路径能够被cluster内的所有节点访问到。
+	共享文件存储介质类型如是fs,需要在elasticsearch.yml添加如下配置,path.repo: ["/data/backup/elk"]
+    如共享文件没有权限,建对应运行的帐号,授权.
+
+   2. 对某个索引或者所有索引建立一个snapshot
+   
+	  异步：PUT _snapshot/my_backup_all/snapshot_1
+      同步: PUT _snapshot/my_backup_all/snapshot_1?wait_for_completion=true
+
+      为某个index建立snapshot
+      PUT _snapshot/my_backup_mysql/snapshot_2
+      {
+		"indices": "mysql_demo"
+      }
+	  
+   3. 获取某个snapshot的信息
+      GET _snapshot/my_backup_mysql/snapshot_2
+      GET _snapshot/my_backup_mysql/_all
+	  
+   4. delete某个snapshot
+
+      DELETE _snapshot/my_backup_mysql/snapshot_2 
+
+   5. 使用snapshot: restore
+    restore所有的索引：
+	
+    POST _snapshot/my_backup_all/snapshot_1/_restore
+    POST _snapshot/my_backup_all/snapshot_1/_restore?wait_for_completion=true
+	POST _snapshot/my_backup_mysql/snapshot_2/_restore
+
+	restore某些索引:
+ 
+    POST /_snapshot/my_backup_mysql/snapshot_2/_restore
+    {
+		"indices": "index_1", 
+		"rename_pattern": "index_(.+)", 
+		"rename_replacement": "restored_index_$1"
+	}
+	
+	参数indices 设置只恢复index_1索引,
+	参数rename_pattern 和rename_replacement 用来正则匹配要恢复的索引,
+	并且重命名。和备份一样，api会立刻返回值，然后在后台执行恢复，使用wait_for_completion 标记强制同步执行
+  
+
+
+  
+  
+  

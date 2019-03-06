@@ -1,0 +1,27 @@
+setup:
+  http://blog.csdn.net/xu470438000/article/details/54090429
+
+cmd:
+  启动NIMBUS
+  nohup $STORM_HOME/bin/storm nimbus >/dev/null 2>&1 &
+  启动SUPERVISOR
+  $STORM_HOME/bin/storm supervisor &
+  启动UI
+  $STORM_HOME/bin/storm ui &
+  删除TOPOLOGY
+  $STORM_HOME/storm kill {toponame}
+  激活TOPOLOGY
+  $STORM_HOME/storm active {toponame}
+  不激活TOPOLOGY
+  $STORM_HOME/storm deactive {toponame}
+  列出所有TOPOLOGY
+  $STORM_HOME/storm list
+  部署TOPOLOGY
+  $STORM_HOME/bin/storm jar /sharefile/demo-storm-0.0.1.jar demo.storm.java.WordCount
+  $STORM_HOME/bin/storm jar /sharefile/demo-storm-0.0.1.jar demo.storm.java.WordCount wordCount 
+
+
+url:
+   http://192.168.10.107:8011
+   
+注意:配置文件必须是整格

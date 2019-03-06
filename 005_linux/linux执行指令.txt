@@ -1,0 +1,54 @@
+時間同步
+./xcall.sh date -s  \'2019-01-08 14:04:50\'
+
+
+
+在101执行,开放4306端口,转到192.168.20.83的3307端口
+* 开放端口4306
+		firewall-cmd --zone=public --add-port=4306/tcp --permanent
+		firewall-cmd --reload
+* 防火墙状态
+		systemctl status firewalld.service 
+* 转发
+firewall-cmd --zone=public --add-forward-port=port=4306:proto=tcp:toport=3307:toaddr=192.168.20.83
+
+
+
+数据库
+
+测试只读
+create user  guest identified by 'scloudTest20181123' ; 
+grant select on scloud.* to guest@"%"  identified by "scloudTest20181123"; 
+
+dev_tool数据库  192.168.20.101:4306 -> 83:3307
+* sonar     soanr sonar
+* xxlojb    xxlojb xxlojb123
+
+test_tool数据库
+* xxlojb    xxlojb xxlojb123
+create user  xxljob identified by 'xxljob123' ; 
+grant all  on xxljob.* to xxljob@"%"  identified by "xxljob123"; 
+
+
+docker 
+验证库
+docker run --restart=always -e MYSQL_ROOT_PASSWORD=TestCloudCheck --name scloud_check -v /data/mysql_scloud_check/my.cnf:/etc/mysql/my.cnf -v /data/mysql_scloud_check/data:/usr/data/ -p 3311:3306 -d mysql:5.6
+
+dev_tool
+docker run --restart=always -e MYSQL_ROOT_PASSWORD=dev123456 --name mysql_init -v /data/mysql_init/my.cnf:/etc/mysql/my.cnf -v /data/mysql_init/data:/usr/data/ -p 3307:3306 -d mysql:5.6
+
+test_tool
+docker run --restart=always -e MYSQL_ROOT_PASSWORD=dev123456 --name mysql_tool -v /data/mysql_tool/my.cnf:/etc/mysql/my.cnf -v /data/mysql_tool/data:/usr/data/ -p 4306:3306 -d mysql:5.6
+
+test
+3311
+MYSQL_ROOT_PASSWORD=TestCloudCheck --name scloud_check -v /data/mysql_scloud_check/my.cnf:/etc/mysql/my.cnf -v /data/mysql_scloud_check/data:/usr/data/ -p 3311:3306 -d mysql:5.6
+
+
+3310
+docker run --restart=always -e MYSQL_ROOT_PASSWORD=TestCloud --name scloud_pre -v /data/mysql_scloud_pre/my.cnf:/etc/mysql/my.cnf -v /data/mysql_scloud_pre/data:/usr/data/ -p 3310:3306 -d mysql:5.6 
+CREATE USER guest IDENTIFIED BY 'scloudTest20181123' ; 
+grant select on scloud.* to guest@"%"  identified by "scloudTest20181123"; 
+3309
+docker run --restart=always -e MYSQL_ROOT_PASSWORD=TestCloud --name scloud_test -v /data/mysql_scloud_test/my.cnf:/etc/mysql/my.cnf -v /data/mysql_scloud_test/data:/usr/data/ -p 3309:3306 -d mysql:5.6 
+

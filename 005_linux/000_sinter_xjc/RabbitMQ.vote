@@ -1,0 +1,67 @@
+https://segmentfault.com/a/1190000010693696
+
+
+wget http://www.rabbitmq.com/releases/erlang/erlang-19.0.4-1.el7.centos.x86_64.rpm
+yum install erlang-19.0.4-1.el7.centos.x86_64.rpm
+
+wget http://www.rabbitmq.com/releases/rabbitmq-server/v3.6.14/rabbitmq-server-3.6.14-1.el7.noarch.rpm
+yum install rabbitmq-server-3.6.14-1.el7.noarch.rpm
+
+
+service rabbitmq-server start
+service rabbitmq-server status
+
+
+开启管理UI
+/sbin/rabbitmq-plugins enable rabbitmq_management
+
+service rabbitmq-server restart
+
+
+添加用户
+  rabbitmqctl add_user sinter Sinter123456
+
+删除用户
+  rabbitmqctl delete_user <username>
+
+修改密码
+  rabbitmqctl change_password <username> <newpassword>
+
+用户授权
+  rabbitmqctl set_permissions [-pvhostpath] {user} {conf} {write} {read}
+  rabbitmqctl set_permissions -p "/" sinter ".*" ".*" ".*"
+
+查看用户授权
+  rabbitmqctl list_permissions [-p VHostPath]
+  rabbitmqctl list_permissions -p /
+
+查看当前用户列表
+  rabbitmqctl list_users
+
+添加角色
+  rabbitmqctl set_user_tags <username> <tag>
+
+
+
+  rabbitmqctl set_user_tags sinter administrator
+
+清除权限信息
+  rabbitmqctl clear_permissions [-p VHostPath] ymq
+  rabbitmqctl  clear_permissions  -p /  ymq
+
+http://localhost:15672
+
+
+
+docker pull rabbitmq:management
+docker run -d --name rabbitmq --publish 15672:15672 --publish 5672:5672 rabbitmq:management
+
+
+
+https://www.cnblogs.com/yangzhilong/p/7904461.html
+
+
+
+
+
+

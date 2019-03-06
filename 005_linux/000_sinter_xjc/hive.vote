@@ -1,0 +1,179 @@
+setup:
+  http://blog.csdn.net/u013310025/article/details/70306421
+  http://www.cnblogs.com/Dhouse/p/5807329.html
+  http://blog.csdn.net/gamer_gyt/article/details/52062460 服务介绍
+  
+1、配置环境变量
+export HIVE_HOME=/opt/hive-2.1.1
+export HIVE_CONF_DIR=/opt/hive-2.1.1/conf 
+ 
+2、在运行 Hive 之前需要使用以下命令修改配置文件:
+ 
+cd $HIVE_CONF_DIR
+cp hive-env.sh.template hive-env.sh
+cp hive-default.xml.template hive-site.xml
+cp hive-log4j2.properties.template hive-log4j2.properties
+cp hive-exec-log4j2.properties.template hive-exec-log4j2.properties
+
+3、创建HDFS目录
+
+hdfs dfs -mkdir -p /hive/warehouse
+hdfs dfs -mkdir -p /hive/tmp
+hdfs dfs -mkdir -p /hive/log
+hdfs dfs -chmod 777 /hive/warehouse
+hdfs dfs -chmod 777 /hive/tmp
+hdfs dfs -chmod 777 /hive/log
+
+vi ./hive-site.xml
+<property>
+    <name>hive.exec.scratchdir</name>
+    <value>hive/tmp</value>
+    <description>HDFS root scratch dir for Hive jobs which gets created with write all (733) permission. For each connecting user, an HDFS scratch dir: ${hive.exec.scratchdir}/&lt;username&gt; is created, with ${hive.scratch.dir.permission}.</description>
+  </property>
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>hive/warehouse</value>
+    <description>location of default database for the warehouse</description>
+  </property>
+<property>
+    <name>hive.querylog.location</name>
+    <value>hive/log</value>
+    <description>Location of Hive run time structured log file</description>
+  </property>
+  
+4、配置Hive Metastore -- mysql
+CREATE DATABASE hive;
+USE hive;
+CREATE USER 'hive'@'localhost' IDENTIFIED BY '123456';
+GRANT ALL ON hive.* TO 'hive'@'localhost' IDENTIFIED BY '123456'; 
+GRANT ALL ON hive.* TO 'hive'@'%' IDENTIFIED BY '123456';
+FLUSH PRIVILEGES; 
+quit;
+
+vi ./hive-site.xml 
+
+
+<property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:mysql://hivemysql:3306/hive?createDatabaseIfNotExist=true&amp;characterEncoding=UTF-8&amp;useSSL=false</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionDriverName</name>
+    <value>com.mysql.jdbc.Driver</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionUserName</name>
+    <value>hive</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionPassword</name>
+    <value123456</value>
+  </property> 
+
+设置zookeeer锁
+<property>
+  <name>hive.support.concurrency</name>
+  <description>Enable Hive's Table Lock Manager Service</description>
+  <value>true</value>
+</property>
+<property>
+  <name>hive.zookeeper.quorum</name>
+  <description>Zookeeper quorum used by Hive's Table Lock Manager</description>
+  <value>dn240.kis.hadoop.cn,dn241.kis.hadoop.cn</value>
+</property>  
+  
+MySQL Java 连接器添加到 $HIVE_HOME/lib 目录下
+
+从 Hive 2.1 版本开始, 我们需要先运行 schematool 命令来执行初始化操作。
+  schematool -dbType mysql -initSchema
+ 
+5、创建tmp文件
+ mkdir /tmp/hive
+ mkdir /opt/hive-2.1.1/logs/
+  
+在配置文件 hive-site.xml 里面
+把{system:java.io.tmpdir} 改成 /tmp/hive
+把{system:user.name} 改成 user 
+
+hive-log4j2.properties
+property.hive.log.dir = /opt/hive-2.1.1/logs/ 
+
+
+6、测试
+$HIVE_HOME/bin/hive --service help 帮助
+$HIVE_HOME/bin/hive --service hiveserver2 -p 10002
+$HIVE_HOME/bin/hiveserver2 服务启动
+$HIVE_HOME/bin/hive –-service hwi  //hive  web界面的启动方式
+$HIVE_HOME/bin/hive --service metastore  9083 元服务
+$HIVE_HOME/bin/hive --service metastore 2>&1 >> /var/hivemetastore.log &
+ps -ef | grep hive-metastore 
+
+kill $(ps -ef|grep hive-metastore|gawk '$0 !~/grep/ {print $2}' |tr -s '\n')
+
+
+
+
+
+
+
+7、调优
+并发执行
+ <property>
+    <name>hive.exec.parallel</name>
+    <value>false</value>
+    <description>Whether to execute jobs in parallel</description>
+  </property>
+  
+  // 开启任务并行执行
+set hive.exec.parallel=true;
+// 同一个sql允许并行任务的最大线程数
+set hive.exec.parallel.thread.number=8;
+ 
+限制调整 limit设置
+
+本地模式
+ <property>
+    <name>hive.exec.mode.local.auto</name>
+    <value>false</value>
+    <description>Let Hive determine whether to run in local mode automatically</description>
+  </property>
+
+严格模式
+  <property>
+    <name>hive.mapred.mode</name>
+    <value>nonstrict</value>
+    <description>Deprecated; use hive.strict.checks.* settings instead.</description>
+  </property>
+
+join 大表在后
+jvm重用
+索引
+分区
+调整 mapper与reducer任务的数量
+
+
+
+命令模式:
+
+  ./hive
+  show tables;
+  
+  -e 执行完退出
+  -S 静默模式
+  -f 从文件执行
+  source 内部加载文件执行
+  !ls 执行本地命令
+  
+  /$HOME/.hiverc 启动执行
+  /$HOME/.hivehistory 命令记录
+  
+  helloword sql:
+  create database if not exists demo;
+  use demo;
+  create table if not exists textlines(line string);
+  create table if not exists words(word STRING);
+  load data local inpath "/opt/demo/wordcount/words.txt" overwrite into table textlines;
+  insert overwrite table words select explode(split(line," ")) word from textlines;
+  select * from (select word, count(*) num from demo.words group by word) a order by num desc  limit 10;
+  
+  $HIVE_HOME/bin/hive -S -f /opt/demo/wordcount/wordcount.hsql

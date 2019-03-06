@@ -1,0 +1,258 @@
+centos7:
+
+yum install -y wget
+yum install -y psmisc
+yum install -y net-tools
+yum install -y zip
+yum install -y unzip
+yum install -y tree
+yum install -y rsync
+yum install bind-utils
+yum install httpd-tools  #ab和htpasswd
+yum install bridge-utils
+
+mount /dev/cdrom /mnt 挂载光驱
+umount /mnt
+
+yum groupinstall "GNOME Desktop" 安装图形界面
+startx 启动桌面
+
+vmtools:
+  yum install -y gcc  
+  yum install -y kernel-devel-$(uname -r)
+  /usr/bin/vmware-config-tools.pl
+  /mnt/hgfs/下看到宿主机共享的文件夹
+  查看共享目录的命令：$>vmware-hgfsclient
+
+//
+pssh
+
+0、更新镜像:
+  mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup
+  wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
+  yum makecache
+
+
+1、path
+   setcustompath.sh
+
+   /etc/profile.d/setcustompath.sh
+   
+   vi /etc/bashrc  
+      source /etc/profile.d/setcustompath.sh
+   /etc/init.d/functions  
+       path
+
+   /etc/rc.local  
+      /opt/script/autostart.sh
+	
+   问题 rc.local不能自动执行问题
+   chmod +x /etc/rc.d/rc.local
+   systemctl enable rc-local.service
+
+2、防火墙
+https://www.cnblogs.com/moxiaoan/p/5683743.html
+ #状态 systemctl status firewalld.service 
+ #开启 systemctl start firewalld.service 
+ #停止 systemctl stop firewalld.service
+ #禁止 systemctl disable firewalld.service 
+
+放开端口80
+firewall-cmd --zone=public --add-port=80/tcp --permanent
+firewall-cmd --reload
+
+ firewall-cmd --state 查看状态
+ firewall-cmd --get-active-zones 获取活动的区域
+ firewall-cmd --get-service --permanent 获取永久选项所支持的服务   就是重启后也支出的
+ firewall-cmd --reload 在不改变状态的条件下重新加载防火墙：
+ 
+ 启用某个服务
+   firewall-cmd --zone=public --add-service=https   //临时 
+   firewall-cmd --permanent --zone=public --add-service=https  //永久
+   firewall-cmd --reload
+ 查看开启的端口和服务
+   #firewall-cmd --permanent --zone=public --list-services //服务空格隔开  例如 dhcpv6-client https ss   
+   #firewall-cmd --permanent --zone=public --list-ports //端口空格隔开  例如  8080-8081/tcp 8388/tcp 80/tcp
+
+ 转发 22 端口数据至另一 ip 的 2055 端口上
+   firewall-cmd --zone=public --add-forward-port=port=22:proto=tcp:toport=2055:toaddr=192.168.1.100
+   firewall-cmd --zone=public --add-forward-port=port=22:proto=tcp:toaddr=192.168.1.100
+   firewall-cmd --zone=public --add-forward-port=port=22:proto=tcp:toport=3753
+   
+   
+   firewall-cmd --query-service http 
+   firewall-cmd --add-service=http
+   firewall-cmd --add-service=http --permanent
+   firewall-cmd --add-service=https 
+   firewall-cmd --add-service=https --permanent
+   firewall-cmd --reload 
+   
+ SELINUX
+    getenforce  
+    setenforce 0
+	sed -i "s/SELINUX=enforcing/SELINUX=disabled/g" /etc/selinux/config
+
+3、增加磁盘
+   fdisk -l
+   n分区 w写入
+
+   格式化: mkfs -t ext3 /dev/sdb1
+
+   开机加载:
+     vi /etc/fstab
+	 /dev/sdb1 /data ext3 defaults 0 0
+	 
+	 mount /dev/sdb1 /data
+     rsync 同步目录
+     sudo rsync -av 原目录 目标目录/
+
+	
+	扩容:
+	
+ 	对新增加的硬盘进行分区、格式化
+		fdisk /dev/sda　　　　 
+		p　　　　　　　查看已分区数量（我看到有两个 /dev/sda1 /dev/sda2） 
+		n　　　　　　　新增加一个分区 
+		p　　　　　　　分区类型我们选择为主分区 
+　　　　　　分区号选3（因为1,2已经用过了，见上） 
+		回车　　　　　　默认（起始扇区） 
+		回车　　　　　　默认（结束扇区） 
+		t　　　　　　　修改分区类型 
+　　　　　　 选分区3 
+		8e　　　　　　修改为LVM（8e就是LVM） 
+		w　　　　　　写分区表 
+		q　　　　　　完成，退出fdisk命令
+		
+	使用partprobe 命令 或者重启机器 
+	格式化分区
+		mkfs.ext3 /dev/sdx3
+		
+    添加新LVM到已有的LVM组，实现扩容
+
+		lvm　　　　　　　　　　　　　　　　　　
+		lvm>pvcreate /dev/sda3　　　这是初始化刚才的分区，必须的
+		lvm>vgextend cl /dev/sda3  将初始化过的分区加入到虚拟卷组centos (卷和卷组的命令可以通过  vgdisplay )
+		lvm>vgdisplay -v
+		lvm>lvextend -l+15359 /dev/cl/root　　扩展已有卷的容量（21513 是通过vgdisplay查看的free的大小）
+		lvm>pvdisplay   查看卷容量，这时你会看到一个很大的卷了
+		lvm>quit    　退出
+
+
+	以上只是卷扩容了，下面是文件系统的真正扩容，输入以下命令：
+		CentOS 7 下面 由于使用的是 XFS，所以要用
+			xfs_growfs /dev/cl/root
+		CentOS 6 下面 要用
+			resize2fs /dev/cl/root
+
+    查看新的磁盘空间
+		df -h
+
+4、ssh
+   
+   ssh-keygen -t rsa 
+   cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+   chmod 600 ~/.ssh/authorized_keys
+   
+   scp 192.168.10.159:~/.ssh/id_rsa.pub ~/
+   cat ~/id_rsa.pub >> ~/.ssh/authorized_keys
+   rm -rf ~/id_rsa.pub
+   
+5、网卡不能启动,可以关闭这个服务.
+   chkconfig NetworkManager off
+   
+   配置中
+   /etc/sysconfig/network-scripts/ifcfg-eth0
+   
+   NM_CONTROLLED="no"禁用NetworkManager
+   或者从NetworkManager管理界面中移除所管理的网卡才可以恢复正常配置
+   
+   ONBOOT=yes 
+   
+6、增加交换空间
+   dd  if=/dev/zero  of=swapfile  bs=1024  count=10000000  //10G
+   
+   命令中选项解释：
+ ---of：输出的交换文件的路径及名称；
+ ---bs：块大小，单位byte，一般为1k即1024个byte；
+ ---count：总块数即空间总大小，单位为块即k；
+ ---if：读取的源空闲空间，为什么是zero，不清楚，先固定这么写吧；
+ 
+ 将swapfile设置为swap空间
+ mkswap swapfile
+ 
+ 启用交换空间
+ swapon  swapfile
+ 
+ 关闭交换空间
+ swapoff  swapfile
+ 
+ 使Swap文件永久生效
+ 
+  vi /etc/fstab
+  /swapfile   swap    swap    sw  0   0
+  
+
+7、SecureCRT
+  ctrl+s 锁定  ctrl+q 解锁
+  
+//
+sed vi nc rsync awk top du df 
+
+8、更改hostname
+  hostnamectl set-hostname 
+  
+9、添加一个网卡
+   cd /etc/sysconfig/network-scripts/
+   service NetworkManager start
+   查看网卡的UUID
+   nmcli con 
+   nmcli con | sed -n '1,2p'
+   
+   检验是否与/etc/sysconfig/network-scripts/ifcfg-eth0里面的UUID值相同
+   cat /etc/sysconfig/network-scripts/ifcfg-eth0 | grep UUID
+   
+10、常用命令
+   查看dns: netstat -rn 或 route -n 
+   查看网关: cat /etc/resolv.conf 
+   查看网桥: brctl show 
+   查看开放的端口：netstat -ntlp
+   查看centos的版本 cat /etc/redhat-release
+
+11、开启内部路由转发功能
+  vi /etc/sysctl.conf 
+  net.ipv4.ip_forward = 1
+  sysctl -p 生效
+更改路由
+  route del default
+  route add -net 0.0.0.0 netmask 0.0.0.0 gw 192.168.20.254 dev ens33
+  
+设置永久的静态路由
+
+   vi /etc/sysconfig/network
+   NETWORKING=yes
+   GATEWAY=192.168.1.1
+   
+   或/etc/sysconfig/static-routes
+   
+   route -n 查看路由
+
+12、定时任务
+crontab -e
+tail -f /var/log/cron
+   
+
+13 开机自启
+https://blog.csdn.net/huangbaokang/article/details/79924058
+1. 编写执行脚本
+    cat nginx_start.sh 
+        #!/bin/bash
+        /opt/ng/nginx/sbin/nginx
+2. 赋予可以执行权限
+    chmod +x nginx_start.sh 
+3. 开机关联脚本(文件末尾追加)
+    vi /etc/rc.d/rc.local
+    /opt/ng/nginx_start.sh 
+4. 重启
+    reboot
+5. 验证
+    ps -ef|grep nginx

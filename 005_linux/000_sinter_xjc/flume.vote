@@ -1,0 +1,68 @@
+1、配置
+export FLUME_HOME=/opt/flume-1.7.0
+2、配置
+cd $FLUME_HOME/conf
+cp flume-env.sh.template flume-env.sh
+cp flume-conf.properties.template flume.conf
+3、启动
+flume-ng version 版本验证
+
+配置
+vi ./flume-avro.conf
+
+tier1.sources=source1  
+tier1.channels=channel1  
+tier1.sinks=sink1  
+  
+tier1.sources.source1.type=avro  
+tier1.sources.source1.bind=0.0.0.0  
+tier1.sources.source1.port=44444  
+tier1.sources.source1.channels=channel1  
+  
+tier1.channels.channel1.type=memory  
+tier1.channels.channel1.capacity=10000  
+tier1.channels.channel1.transactionCapacity=1000  
+tier1.channels.channel1.keep-alive=30  
+ 
+tier1.sinks.sink1.type=hdfs  
+tier1.sinks.sink1.channel=channel1  
+tier1.sinks.sink1.hdfs.path=hdfs://hadoop-master:9000/demo
+tier1.sinks.sink1.hdfs.fileType=DataStream  
+tier1.sinks.sink1.hdfs.writeFormat=Text  
+tier1.sinks.sink1.hdfs.rollInterval=0  
+tier1.sinks.sink1.hdfs.rollSize=10240  
+tier1.sinks.sink1.hdfs.rollCount=0  
+tier1.sinks.sink1.hdfs.idleTimeout=60 
+
+启动
+$FLUME_HOME/bin/flume-ng agent -n tier1 --conf $FLUME_HOME/conf/ -f $FLUME_HOME/conf/flume-avro.conf 
+-Dflume.root.logger=DEBUG,console 
+客户端
+$FLUME_HOME/bin/flume-ng avro-client -H localhost -p 44444 -F $FLUME_HOME/hello.txt 
+
+
+vi ./flume-avro-logger.conf
+
+agent1.sources = source1
+agent1.sinks = sink1
+agent1.channels = channel1
+ 
+# Describe/configure source1
+agent1.sources.source1.type = avro
+agent1.sources.source1.bind = localhost
+agent1.sources.source1.port = 44444
+ 
+# Describe sink1
+agent1.sinks.sink1.type = logger
+ 
+# Use a channel which buffers events in memory
+agent1.channels.channel1.type = memory
+agent1.channels.channel1.capacity = 1000
+agent1.channels.channel1.transactionCapactiy = 100
+ 
+# Bind the source and sink to the channel
+agent1.sources.source1.channels = channel1
+agent1.sinks.sink1.channel = channel1
+
+$FLUME_HOME/bin/flume-ng agent -n agent1 --conf $FLUME_HOME/conf/ -f $FLUME_HOME/conf/flume-avro-logger.conf -Dflume.root.logger=INFO,console 
+$FLUME_HOME/bin/flume-ng avro-client -H localhost -p 44444 -F $FLUME_HOME/hello.txt

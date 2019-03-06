@@ -1,0 +1,31 @@
+setup:
+ http://blog.csdn.net/vellin/article/details/53994014
+ 
+ /opt/mongodb-3.4.4/bin/mongod --bind_ip 127.0.0.1,mongodb-02 -f /data/mongodb/conf/configsvr.conf
+./mongo --host 127.0.0.1 --port 27000
+rs.initiate({_id:"cfgReplSet",configsvr:true,members:[{_id:0,host:"mongodb-01:27000"},{_id:1,host:"mongodb-02:27000"},{_id:2,host:"mongodb-03:27000"}]});
+
+./mongo --host 127.0.0.1 --port 27001
+/opt/mongodb-3.4.4/bin/mongod --bind_ip 127.0.0.1,mongodb-02 -f /data/mongodb/conf/shard1.conf
+rs.initiate({_id:"shard1",members:[{_id:0,host:"mongodb-01:27001"},{_id:1,host:"mongodb-02:27001"},{_id:2,host:"mongodb-03:27001",arbiterOnly:true}]});
+
+./mongo --host 127.0.0.1 --port 27002
+/opt/mongodb-3.4.4/bin/mongod --bind_ip 127.0.0.1,mongodb-02 -f /data/mongodb/conf/shard2.conf
+rs.initiate({_id:"shard2",members:[{_id:0,host:"mongodb-01:27002"},{_id:1,host:"mongodb-02:27002"},{_id:2,host:"mongodb-03:27002",arbiterOnly:true}]});
+
+./mongo --host 127.0.0.1 --port 27003
+/opt/mongodb-3.4.4/bin/mongod --bind_ip 127.0.0.1,mongodb-02 -f /data/mongodb/conf/shard3.conf
+rs.initiate({_id:"shard3",members:[{_id:0,host:"mongodb-01:27003"},{_id:1,host:"mongodb-02:27003"},{_id:2,host:"mongodb-03:27003",arbiterOnly:true}]});
+
+sh.addShard("shard1/mongodb-01:27001,mongodb-02:27001,mongodb-03:27001");
+sh.addShard("shard2/mongodb-01:27002,mongodb-02:27002,mongodb-03:27002");
+sh.addShard("shard3/mongodb-01:27003,mongodb-02:27003,mongodb-03:27003");
+
+sh.enableSharding("test");
+sh.shardCollection("test.Log", { id: 1});
+use test;
+for(var i = 1; i <= 100; i++){db.Log.save({id:i,"message":"message"+i});};
+
+
+view:
+  mongostat -discover

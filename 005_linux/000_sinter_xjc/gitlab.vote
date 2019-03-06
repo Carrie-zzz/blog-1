@@ -1,0 +1,91 @@
+
+gitlab:
+  http://www.cnblogs.com/juandx/p/5339254.html
+  https://about.gitlab.com/downloads/#centos7
+  http://blog.csdn.net/ouyang_peng/article/details/72903829 汉化
+  
+  http://www.cnblogs.com/yangliheng/p/5760185.html 8.8安装
+
+  centos最小化安装:
+     yum install policycoreutils-python
+
+
+  改变路径:
+  
+   By default, omnibus-gitlab stores the Git repository data under  /var/opt/gitlab/git-data. The repositories are stored in a subfolder  repositories. You can change the location of the git-data parent directory by adding the following line to /etc/gitlab/gitlab.rb.
+
+git_data_dirs({"default" => "/mnt/nas/git-data"})
+Starting from GitLab 8.10 you can also add more than one git data directory by adding the following lines to /etc/gitlab/gitlab.rb instead.
+
+git_data_dirs({
+  "default" => "/var/opt/gitlab/git-data",
+  "alternative" => "/mnt/nas/git-data"
+})
+Note that the target directories and any of its subpaths must not be a symlink.
+
+Run sudo gitlab-ctl reconfigure for the changes to take effect.
+
+If you already have existing Git repositories in  /var/opt/gitlab/git-data you can move them to the new location as follows:
+
+# Prevent users from writing to the repositories while you move them.
+sudo gitlab-ctl stop
+
+# Note there is _no_ slash behind 'repositories', but there _is_ a
+# slash behind 'git-data'.
+sudo rsync -av /var/opt/gitlab/git-data/repositories /mnt/nas/git-data/
+
+# Fix permissions if necessary
+sudo gitlab-ctl reconfigure
+
+# Double-check directory layout in /mnt/nas/git-data. Expected output:
+# gitlab-satellites  repositories
+sudo ls /mnt/nas/git-data/
+
+# Done! Start GitLab and verify that you can browse through the repositories in
+# the web interface.
+sudo gitlab-ctl start
+
+Git Credential Manager for Windows:
+    1、配置cmd下的git
+    2、git config --global credential.helper manager
+  gitlab-ctl reconfigure  #配置并启动gitlab
+汉化:
+
+#国内使用 https://git.coding.net/larryli/gitlab.git
+ 目前最高只有8.8有汉化版
+ 
+   查看版本号: cat /opt/gitlab/embedded/service/gitlab-rails/VERSION
+
+   gitlab-ctl stop
+   \cp  /opt/gitlabhq/*  /opt/gitlab/embedded/service/gitlab-rails/  -rf
+   gitlab-ctl start|stop|status|restart
+   
+   
+忘记管理员密码:
+   1. 在root用户下，执行
+
+gitlab-rails console production
+
+获得用户数据，修改用户密码
+[root@svr34 bin]# gitlab-rails console production
+Loading production environment (Rails 4.2.5.2)
+irb(main):001:0> user = User.where(id: 1).first
+=> #<User id: 1, email: "admin@example.com", ...
+irb(main):002:0> user.password=12345678
+=> 12345678
+irb(main):003:0> user.password_confirmation=12345678
+=> 12345678
+irb(main):004:0> user.save!
+=> true
+irb(main):005:0> quit
+注意：密码没有使用引号，奇怪的是使用单引号或双引号，密码就无效，估计是包含了这个字符，不包含，就没有问题。 
+
+字符密码需要引号
+
+3. 保存用户数据
+user.save!
+注意需要使用后面的感叹号!
+
+4.修改端口
+cd /var/opt/gitlab/nginx/conf
+vim gitlab-http.conf

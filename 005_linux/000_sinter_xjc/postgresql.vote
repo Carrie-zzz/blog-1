@@ -1,0 +1,118 @@
+yum -y install https://download.postgresql.org/pub/repos/yum/10/redhat/rhel-7-x86_64/pgdg-centos10-10-1.noarch.rpm
+yum -y install postgresql10
+yum -y install postgresql10-server
+yum -y install postgresql10-contrib
+
+/usr/pgsql-10/bin/postgresql-10-setup initdb
+systemctl enable postgresql-10
+systemctl start postgresql-10
+systemctl stop postgresql-10
+systemctl disable postgresql-10
+
+修改密码:
+sudo -u postgres psql postgres
+\password postgres 
+
+\q 退出
+
+远程连接
+vi /var/lib/pgsql/10/data/postgresql.conf
+
+1、修改postgresql.conf文件
+
+定位到#listen_addresses=’localhost’。PostgreSQL安装完成后，默认是只接受来在本机localhost的连接请 求。
+
+将行开头都#去掉，将行内容修改为listen_addresses=’*'来允许数据库服务器监听来自任何主机的连接请求
+
+2、修改pg_hba.conf文件
+
+vi /var/lib/pgsql/10/data/pg_hba.conf
+host  all    all    0.0.0.0/0    md5
+
+
+http://blog.csdn.net/wk1134314305/article/details/79054248
+
+3、修改数据库目录
+安装后默认的目录
+/var/lib/pgsql/{version}/data
+service postgresql-10 stop
+ 
+mkdir -p /data/pgsql
+
+
+cp -rf /var/lib/pgsql/10/  /data/pgsql/
+
+sudo chown -R postgres:postgres /data/pgsql/10
+sudo chmod 700 /data/pgsql/10
+
+修改服务:
+vi /usr/lib/systemd/system/postgresql-10.service
+sudo systemctl daemon-reload
+service postgresql-10 start
+
+
+postgis
+
+
+yum search
+cat /etc/redhat-release
+sudo rpm -ivh http://mirrors.aliyun.com/epel/7/x86_64/Packages/e/epel-release-7-11.noarch.rpm
+yum install postgis24_10 postgis24_10-client 
+yum install ogr_fdw10
+yum install pgrouting_10
+
+
+数据库使用PostGIS:
+
+对各个数据库:
+-- Enable PostGIS (includes raster)
+CREATE EXTENSION postgis;
+-- Enable Topology
+CREATE EXTENSION postgis_topology;
+-- Enable PostGIS Advanced 3D 
+-- and other geoprocessing algorithms
+-- sfcgal not available with all distributions
+CREATE EXTENSION postgis_sfcgal;
+-- fuzzy matching needed for Tiger
+CREATE EXTENSION fuzzystrmatch;
+-- rule based standardizer
+CREATE EXTENSION address_standardizer;
+-- example rule data set
+CREATE EXTENSION address_standardizer_data_us;
+-- Enable US Tiger Geocoder
+CREATE EXTENSION postgis_tiger_geocoder;
+
+验证PostGis是否安装成功 
+   SELECT postgis_full_version();
+
+
+CREATE TABLE cities(id varchar(20),name varchar(50));
+SELECT AddGeometryColumn ('cities', 'the_geom', 4326, 'POINT', 2);
+INSERT INTO cities(id, the_geom, name) VALUES (1,ST_GeomFromText('POINT(-0.1257 51.508)',4326),'London, England');
+INSERT INTO cities (id, the_geom, name) VALUES (2,ST_GeomFromText('POINT(-81.233 42.983)',4326),'London, Ontario');
+INSERT INTO cities (id, the_geom, name) VALUES (3,ST_GeomFromText('POINT(27.91162491 -33.01529)',4326),'East London,SA');
+SELECT * FROM cities;
+
+注：这里的坐标是无法阅读的 16 进制格式。要以 WKT 文本显示，使用 ST_AsText(the_geom) 或 ST_AsEwkt(the_geom) 函数。
+也可以使用 ST_X(the_geom) 和 ST_Y(the_geom) 显示一个维度的坐标：
+
+SELECT id, ST_AsText(the_geom), ST_AsEwkt(the_geom), ST_X(the_geom), ST_Y(the_geom) FROM cities;
+SELECT p1.name,p2.name,ST_Distance_Sphere(p1.the_geom,p2.the_geom) FROM cities AS p1, cities AS p2 WHERE p1.id > p2.id;
+
+
+
+参考资料:
+postgreSQL 9.4+PostGis
+  http://blog.csdn.net/predict_wise/article/details/53106558
+
+
+
+
+
+
+
+
+
+
+
+

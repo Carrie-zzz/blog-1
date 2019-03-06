@@ -1,0 +1,65 @@
+spring.profiles.active=prod
+
+配置文件加载顺序
+./config/
+./
+classpath:./config/
+classpath:./
+
+java -jar spring-boot-02-config-02-0.0.1-SNAPSHOT.jar --spring.config.location=G:/application.properties
+
+
+
+外部配置加载顺序
+	1. 命令行
+		java -jar x.jar --server.port=8087 --server.context-path=/abc
+		多个配置用空格分开
+		--配置项=值
+	2. 来自java:comp/env的JNDI属性
+	3. Java系统属性(System.getProperties())
+	4. 操作系统环境变量
+	5. RandomValuePropertySource配置的random.*属性值
+	
+	由jar包外向jar包内进行寻找；  优先加载带profile
+	(profile)
+	6. jar包外部的application-{profile}.properties或application.yml(带spring.profile)配置文件
+	7.jar包内部的application-{profile}.properties或application.yml(带spring.profile)配置文件
+	(再来加载不带profile)
+	8. 8.jar包外部的application.properties或application.yml(不带spring.profile)配置文件
+	9. jar包内部的application.properties或application.yml(不带spring.profile)配置文件
+	
+	10. @Configuration注解类上的@PropertySource
+	11. 通过SpringApplication.setDefaultProperties指定的默认属性
+
+
+
+@ConfigurationProperties(prefix="spring.http.encoding")		
+	指定配置文件的前缀
+@EnableConfigurationProperties(HttpEncodingProperties.class)
+	指定使用哪个类作为properties
+
+
+
+条件(如果满足指定的条件,整个配置类里面的配置就会生效)
+@ConditionalOnWebApplication
+	Spring底层@Conditional注解（Spring注解版），根据不同的条件
+	判断当前应用是否是web应用,如果是,当前配置类生效
+@ConditionalOnClass(CharacterEncodingFilter.class)
+	判断当前项目有没有这个类
+@ConditionalOnProperty(prefix="spring.http.encoding",value="enabled",matchIfMissing=true)
+
+
+-----------------------------------------------------------------------
+日志
+	slf4j(simple logging facade for java)	Logback 
+
+-----------------------------------------------------------------------
+thymeleaf
+
+-----------------------------------------------------------------------
+
+
+
+
+
+-----------------------------------------------------------------------

@@ -1,0 +1,38 @@
+1. 安装jdk
+2. 安装sonar
+	https://www.cnblogs.com/ding2016/p/8065241.html
+	https://www.sonarqube.org
+* wget https://sonarsource.bintray.com/Distribution/sonarqube/sonarqube-6.7.5.zip
+* unzip  sonarqube-6.7.zip -d /opt/
+* useradd sonar
+* passwd sonar
+* chown  -R  sonar  /opt/sonarqube/
+* 修改数据库配置
+	vi /opt/sonarqube/conf/sonar.properties
+
+3. 安装插件
+	* 中文插件(sonar-l10n-zh-plugin-)
+		* 下载jar
+			https://github.com/SonarQubeCommunity/sonar-l10n-zh
+		* jar放入/opt/sonarqube/extensions/plugins/下面
+	* 语言插件
+		* 在启动后,到管理后台市场里面下载
+4. 启动
+	* 切换到 sonar用户(es 6.* 后不允许root运行)
+		su sonar
+	* 启动(解压目录内)
+		/opt/sonarqube/bin/linux-x86-64/sonar.sh start　
+	* 第一次需要启动两次
+		[sonar@dev_sonar_qube sonarqube]$ ./bin/linux-x86-64/sonar.sh  status
+		SonarQube is not running.
+		[sonar@dev_sonar_qube sonarqube]$ ./bin/linux-x86-64/sonar.sh  start
+		Starting SonarQube...
+		Started SonarQube.
+		[sonar@dev_sonar_qube sonarqube]$ ./bin/linux-x86-64/sonar.sh  status
+		SonarQube is running (3086).
+5. 日志
+	* tail -f /opt/sonarqube/logs/sonar.log
+	* vi /opt/sonarqube/logs/sonar.log
+	* rm -f /opt/sonarqube/logs/sonar.log
+
+

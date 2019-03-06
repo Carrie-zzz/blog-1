@@ -1,0 +1,76 @@
+compile:
+   yum install openssl openssl-devel popt-devel
+   ./configure --prefix=/opt/keepalived
+   
+   或  
+   yum install keepalived centos 6已有
+   yum -y install ipvsadm centos 7已有
+   
+
+setup:
+  http://www.cnblogs.com/MacoLee/p/5856858.html lvs详解
+  http://wangzhijian.blog.51cto.com/6427016/1705335
+  http://blog.csdn.net/u012852986/article/details/52386306
+  http://www.linuxde.net/2013/04/13381.html
+  http://www.cnblogs.com/kevingrace/p/6138185.html
+  http://www.cnblogs.com/along1226/p/5027838.html 配置文件详解
+  http://lansgg.blog.51cto.com/5675165/1221310 ip 隧道配置
+  
+  mkdir /etc/keepalived   
+  cp /opt/keepalived-1.3.5/etc/keepalived/keepalived.conf /etc/keepalived/   
+  cp /opt/keepalived-1.3.5/etc/sysconfig/keepalived /etc/sysconfig/   
+  cp /opt/keepalived-1.3.5/sbin/keepalived  /usr/sbin/  
+  cp /opt/keepalived-1.2.22/etc/rc.d/init.d/keepalived /etc/init.d/ 
+  chmod +x /etc/init.d/keepalived  
+  
+  chkconfig --add keepalived
+  chkconfig keepalived on
+  
+  /var/log/messages 查看日志
+  
+  
+  # Keepalive 定义的四种状态脚本说明
+当进入Master状态时会呼叫notify_master
+当进入Backup状态时会呼叫notify_backup
+当发现异常情况时进入Fault状态呼叫notify_fault
+当Keepalived程序终止时则呼叫notify_stop
+  
+         notify_master /root/scripts/xxxx.sh
+        notify_backup /root/scripts/xxxx.sh
+        notify_fault  /root/scripts/xxxx.sh
+        notify_stop  /root/scripts/xxxx.sh
+	
+ 开启路由转发
+ cat /proc/sys/net/ipv4/ip_forward
+ echo 1 > /proc/sys/net/ipv4/ip_forward 
+ 
+ 
+ 查看内核中是否已加载ip_vs模块
+ lsmod |grep ip_vs
+ 
+
+ 
+ LVS NAT模式下
+ 1、CIP与RIP处于同一内网,在RIP需要增加至CIP的路由.
+	route add -host CIP gw DIP
+ 2、DIP机器需要打开路由功能
+ 
+ LVS映射端口须一致
+ 
+ ipvsadm --list --stats --numeric --exact
+ ipvsadm -l --stats  连接状态
+ ipvsadm -l  --rate  速率 
+ 
+ watch -n  1 -d 'ipvsadm -ln'
+ 
+ http://www.austintek.com/LVS/LVS-HOWTO/HOWTO/LVS-HOWTO.monitoring_lvs.html vpn监控
+ 
+  LVS环境搭建及图形化管理（Pacemaker管理+heartbeat心跳+ipvs(DR)ldirector健康检查及转发）Piranha
+		
+其它:
+
+keeplived是为了协助lvs开发的，keeplive的配置文件里的负载均衡就是调用ipvsadm完成的，要是没有lvs，keeplived里边设置负载均衡会报错的
+			
+1. ipvsadm（LVS）有负载均衡机制，目前支持8中均衡算法。
+2. keepalived除了健康检查以外，也具备负载均衡功能。现在他的健康检查功能用的比较多，其负载均衡能力被大部分人忽略了。
+3. lvs+keepalived这种框架下，完全可以使用keepalived来均衡负载（ipvsadm这个组件也需要装上，只是为了便于管理集群）。

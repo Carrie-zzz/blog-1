@@ -1,0 +1,25 @@
+yum install mariadb-server mariadb 
+
+systemctl start mariadb  #启动MariaDB
+systemctl stop mariadb   #停止MariaDB
+systemctl restart mariadb #重启MariaDB
+systemctl enable mariadb  #设置开机启动
+
+查看版本号: mysql -V
+
+修改密码:
+  mysqladmin -uroot -p123456 password 123456
+  
+ 
+允许mysql远程连接:
+  mysql -u root -p"123456" 
+  GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '123456' WITH GRANT OPTION;
+  FLUSH PRIVILEGES;
+  
+ 
+编码:
+  vi /etc/my.cnf
+  在 [mysqld] 下添加：character-set-server=utf8
+  然后重启:  systemctl restart mariadb
+  
+  查看编码: SHOW VARIABLES LIKE 'character%';

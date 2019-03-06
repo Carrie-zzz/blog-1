@@ -1,0 +1,52 @@
+setup:
+  http://www.cnblogs.com/avivaye/p/6196485.html
+  http://blog.csdn.net/u014729236/article/details/46876651
+  http://blog.csdn.net/m_signals/article/details/53190965
+  http://blog.csdn.net/lusyoe/article/details/60478226
+  
+  
+数据驱动:
+   sqoop-1.99.7/extra目录下
+ Hadoop代理设置:
+ 
+   <property>
+   <name>hadoop.proxyuser.$SERVER_USER.hosts</name>
+   <value>*</value>
+   </property>
+   
+   <property>
+   <name>hadoop.proxyuser.$SERVER_USER.groups</name>
+   <value>*</value>
+   </property>
+   $SQOOP_HOME/bin/sqoop2-tool upgrade
+   $SQOOP_HOME/bin/sqoop2-tool verify
+   $SQOOP_HOME/bin/sqoop2-server start
+   $SQOOP_HOME/bin/sqoop2-server stop
+   $SQOOP_HOME/bin/sqoop2-shell
+      set server --host big01 --port 12000 --webapp sqoop
+	  或
+	  set server --url http://sqoop2.company.net:80/sqoop
+	  
+	  
+   set option --name verbose --value true 显示错误明细
+   
+ 
+  
+验证连接是否正常: show version -all  
+查看Sqoop服务器上注册的连接器: show connector 
+
+create link --connector hdfs-connector
+hdfs://hadoop-master:9000/
+/opt/hadoop-2.7.3/etc/hadoop
+
+create link --connector generic-jdbc-connector
+com.mysql.jdbc.Driver
+jdbc:mysql://192.168.10.170:3306/test?useUnicode=true&characterEncoding=utf-8
+
+create job --from "link-name1" --to "link-name2"  
+
+
+注意：
+1、mysql设置中
+   Identifier enclose:  注意  这里不能直接回车！要打一个空格符号！因为如果不打，查询mysql表的时候会在表上加上“”，导致查询出错！
+2、 hadoop需要开启 historyserver  服务   

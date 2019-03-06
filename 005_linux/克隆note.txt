@@ -1,0 +1,52 @@
+1. 克隆
+2. eth0 -> ens33 网卡改名字了
+3. 修改ip
+	参考 :  https://blog.csdn.net/u012060033/article/details/78695243
+	vi /etc/sysconfig/network-scripts/ifcfg-ens33
+
+	* BOOTPROTO
+		* dhc 默认	(动态)
+		* static	(静态)
+	TYPE="Ethernet"
+
+	BOOTPROTO="static"
+
+	DEFROUTE="yes"
+	PEERDNS="yes"
+	PEERROUTES="yes"
+	IPV4_FAILURE_FATAL="no"
+	IPV6INIT="yes"
+	IPV6_AUTOCONF="yes"
+	IPV6_DEFROUTE="yes"
+	IPV6_PEERDNS="yes"
+	IPV6_PEERROUTES="yes"
+	IPV6_FAILURE_FATAL="no"
+	IPV6_ADDR_GEN_MODE="stable-privacy"
+	NAME="ens33"
+
+	#UUID="26635066-68d6-40dd-9b31-e9cf6ac01d4a"
+
+	DEVICE="ens33"
+	ONBOOT="yes"
+	NM_CONTROLLED="no"
+
+	IPADDR="192.168.20.194"
+	NETMASK="255.255.255.0"
+	GATEWAY="192.168.20.254"
+4. 修改主机名  hostnamectl
+	参考 : https://blog.csdn.net/xuheng8600/article/details/79983927
+	* 静态 
+		“静态”主机名也称为内核主机名，是系统在启动时从/etc/hostname自动初始化的主机名。
+	* 瞬态 
+		临时分配的主机名,例如，通过DHCP或mDNS服务器分配	
+	* 灵活
+		灵活”主机名则允许使用自由形式（包括特殊/空白字符）的主机名，以展示给终端用户（如xh01@f5）。
+		“静态”主机名和“瞬态”主机名都遵从作为互联网域名同样的字符限制规则。
+	
+	* hostnamectl set-hostname "dev_"
+	* vi /etc/hosts
+		127.0.0.1 dev_
+
+5. 防火墙
+	 firewall-cmd --state
+

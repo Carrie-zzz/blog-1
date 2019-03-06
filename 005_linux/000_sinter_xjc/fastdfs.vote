@@ -1,0 +1,103 @@
+
+https://www.cnblogs.com/jkko123/p/6490744.html
+
+yum install git gcc gcc-c++ make automake autoconf libtool pcre pcre-devel zlib zlib-devel openssl-devel -y
+
+安装libfastcommon
+  wget https://github.com/happyfish100/libfastcommon/archive/V1.0.36.tar.gz
+  
+  tar xf ./V1.0.36.tar.gz
+  cd ./libfastcommon-1.0.7
+  ./make.sh
+  ./make.sh install
+
+安装fastdfs
+  wget https://github.com/happyfish100/fastdfs/archive/V5.11.tar.gz
+  
+  tar xf ./V5.11.tar.gz
+  cd ./fastdfs-5.11
+  ./make.sh
+  ./make.sh install
+  
+fastdfs的配置文件
+  配置文件默认在/etc/fdfs下
+  默认脚本在/etc/init.d下
+  
+  创建数据目录:
+  mkdir -p /data/fastdfs/tracker
+  mkdir -p /data/fastdfs/storage
+  
+  cd /etc/fdfs
+  cp ./storage.conf.sample ./storage.conf
+  cp ./tracker.conf.sample ./tracker.conf
+  
+  #跟踪器的配置文件
+  vi ./tracker.conf
+  #日志数据路径
+  base_path=/data/fastdfs/tracker
+  
+  #存储节点的配置文件
+  mkdir /data/fastdfs/storage/base
+  mkdir /data/fastdfs/storage/storage0
+  mkdir /data/fastdfs/storage/storage1
+  
+  vi ./storage.conf
+  #日志数据路径
+  base_path=/data/fastdfs/storage/base
+  #storage path的个数
+  store_path_count=2
+  #根据store_path_count的值，就要有storage0到storage(N-1)个
+  store_path0=/data/fastdfs/storage/storage0
+  store_path1=/data/fastdfs/storage/storage1
+  #跟踪服务器
+  tracker_server=tracker01:22122
+  
+启动服务
+  /etc/init.d/fdfs_trackerd start
+  /etc/init.d/fdfs_storaged start
+  
+查看服务是否启动
+  ps -ef|grep fdfs
+  netstat -nltp
+  
+测试fastdfs
+  mkdir -p /data/fastdfs/client
+  cd /etc/fdfs
+  cp ./client.conf.sample ./client.conf
+  vi ./client.conf
+  
+  #存放日志目录
+  base_path=/data/fastdfs/client
+  #跟踪服务器
+  tracker_server=tracker01:22122
+  
+  上传文件
+  echo "12345678" >> /data/1.txt
+  fdfs_upload_file /etc/fdfs/client.conf /data/1.txt
+  
+  下载文件
+  fdfs_download_file /etc/fdfs/client.conf  文件名如(group1/M00/00/00/wKgB3li3a2mAejYPAAAADok0NhY177.txt)
+  
+  查看文件
+  fdfs_file_info /etc/fdfs/client.conf 文件名如(group1/M00/00/00/wKgB3li3a2mAejYPAAAADok0NhY177.txt)
+  
+  追加文件
+  fdfs_upload_appender
+  fdfs_append_file
+  删除文件
+  fdfs_delete_file
+  
+  查看集群
+  fdfs_monitor /etc/fdfs/client.conf
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  

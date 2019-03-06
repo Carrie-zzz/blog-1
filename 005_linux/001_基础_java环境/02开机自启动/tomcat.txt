@@ -1,0 +1,72 @@
+jdk在/etc/profile中的配置在系统服务中不生效
+
+修改tomcat配置文件,指定jdk位置
+	https://blog.csdn.net/tiantang_1986/article/details/53704966
+修改systemctl,指定配置文件(这个会好一些)
+	https://www.cnblogs.com/taomylife/p/7992817.html
+
+
+1. 安装jdk
+	* source /etc/profile
+2. 上传tomcat,解压
+	firewall-cmd --zone=public --add-port=8080/tcp --permanent
+	firewall-cmd --reload
+3. 创建文件
+	* vi /usr/lib/systemd/system/tomcat.service
+4. 配置文件(路径一定要改成自己的!!!)
+[Unit]
+Description=Apache Tomcat 8
+After=syslog.target network.target
+
+[Service]
+Type=forking
+Environment="JAVA_HOME=/opt/jdk/jdk1.7.0_79"
+PIDFile=/opt/tomcat/tomcat_test/tomcat.pid
+ExecStart=/opt/tomcat/tomcat_test/bin/catalina.sh start
+ExecReload=/opt/tomcat/tomcat_test/bin/catalina.sh restart
+ExecStop=/opt/tomcat/tomcat_test/bin/catalina.sh stop
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
+5. 启动失败
+	* 启动
+		systemctl start tomcat
+		systemctl status tomcat
+	* 错误
+		*Neither the JAVA_HOME nor the JRE_HOME environment variable is defined
+			* 个人感觉是systemctl启动tomcat时候,tomcat使用相对路径找不到 jdk,及时环境变量中有了jdk
+			* 方法
+				* 修改tomcat/bin/setclasspath.sh (添加jdk路径)
+					# Make sureprerequisite environment variables are set
+					export  JAVA_HOME=/opt/jdk1.8.0_131
+					export  JRE_HOME=/opt/jdk1.8.0_131/jre
+
+		* PID file /opt/tomcat/tomcat_test/tomcat.pid not readable (yet?) after start.
+			* systemctl启动tomcat时候,配置了pid位置但是没有读取到
+			* 方法
+				* 新建tomcat/bin/setenv.sh(catalina.sh启动的时候会调用,内存也在这里配置)
+					vi /opt/tomcat/tomcat_test/bin/setenv.sh
+						#add tomcat pid
+						#CATALINA_PID="/opt/tomcat/tomcat_test/tomcat.pid"
+						CATALINA_PID="$CATALINA_BASE/tomcat.pid"
+6. 启动时间过长
+	* 查看日志发现一只卡在,大概需要一分钟左右才能启动
+		 tail -f /opt/tomcat/tomcat_test/logs/catalina.out 
+			 org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [/opt/tomcat/tomcat_test/webapps/ROOT]		
+	* 原因
+		linux或者部分unix系统提供随机数设备是/dev/random 和/dev/urandom ，
+		两个有区别
+			urandom安全性没有random高，
+			但random需要时间间隔生成随机数。
+		jdk默认调用random,消耗时间比较长
+	* 方法 
+		* 修改jdk中jre配置
+			jdk1.x.x_xx/jre/lib/security/java.security
+		* 将securerandom.source=file:/dev/random 改成  securerandom.source=file:/dev/urandom
+			
+
+
+
+

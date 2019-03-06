@@ -1,0 +1,46 @@
+setup:
+  http://blog.csdn.net/lixianlin/article/details/7024893
+  
+
+wget http://download.redis.io/releases/redis-3.0.6.tar.gz
+
+# make
+# make PREFIX=/usr/local/redis-2.4.4 install
+# cp redis.conf /usr/local/redis-2.4.4
+
+make && make install  
+  
+启动服务：
+
+# cd /usr/local/redis-2.4.4
+
+修改配置文件，将其中的"daemonize no"行改为"daemonize yes"，让其在后台运行。
+
+# vim redis.conf
+
+启动redis服务
+
+# ./bin/redis-server redis.conf
+
+
+关闭服务：
+
+# ./bin/redis-cli -p 6379 shutdown
+ 
+
+简单操作：
+
+# ./bin/redis-cli
+
+redis 127.0.0.1:6379> set key hi
+
+OK
+
+redis 127.0.0.1:6379> get key
+
+"hi"
+
+
+redis官方网站：http://redis.io/
+
+ 

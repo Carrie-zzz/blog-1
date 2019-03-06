@@ -1,0 +1,184 @@
+容器生命周期管理 — docker [run|start|stop|restart|kill|rm|pause|unpause]
+容器操作运维 — docker [ps|inspect|top|attach|events|logs|wait|export|port]
+容器rootfs命令 — docker [commit|cp|diff]
+镜像仓库 — docker [login|pull|push|search]
+本地镜像管理 — docker [images|rmi|tag|build|history|save|import]
+其他命令 — docker [info|version]
+
+yum -y install docker
+systemctl enable docker # 开机自动启动docker
+systemctl start docker # 启动docker
+systemctl restart docker # 重启dokcer
+
+1.拉取centos镜像
+  docker pull centos:7
+2.基于拉取到的镜像运行一个容器
+  docker run -it --name mycentos docker.io/centos:7 /bin/bash
+
+  docker exec -it  426dcaf87816 /bin/bash 进入容器
+3.拷贝命令
+  docker cp /apache-tomcat-7.0.78.tar.gz mycentos:/usr
+4.制作tomcat镜像
+  docker commit mycentos mytomcat:7
+5.用制作好的tomcat镜像启动一个tomcat容器
+  docker run -d -p 58080:8080 -v /opt/webapps/web01:/opt/apache-tomcat-8.0.45/webapps/ --name mytomcat_1 mytomcat:1.0 /opt/scripts/run.sh
+
+-d：表示以“守护模式”执行/root/run.sh脚本，此时 Tomcat 控制台不会出现在输出终端上。
+
+-p：表示宿主机与容器的端口映射，此时将容器内部的 8080 端口映射为宿主机的 58080 端口，这样就向外界暴露了 58080 端口，可通过 Docker 网桥来访问容器内部的 8080 端口了。
+
+-v：表示需要将本地哪个目录挂载到容器中，格式：-v <宿主机目录>:<容器目录>
+
+--name：表示容器名称，用一个有意义的名称命名即可。
+
+6.
+  docker exec -it $CONTAINER_ID /bin/bash //进入已经运行的容器
+  docker stop $CONTAINER_ID //停止容器
+  docker start $CONTAINER_ID //启动容器
+  docker rm  //删除容器
+  docker info //
+  docker port $CONTAINER_ID //
+  docker build -t 新的镜像名 //重构镜像 
+  docker ps //查看当前运行
+  docker ps -a //查看所有
+  docker rmi //移除镜像
+  docker logs $CONTAINER_ID //查看镜像日志
+  docker search  $NAME //搜索镜像文件
+  docker save //存出镜像
+  docker load //载入镜像
+
+10. link只适用于一台主机
+  docker run --link db:aliasdb
+
+13. 查看root密码
+  docker容器启动时的root用户的密码是随机分配的。
+  所以，通过这种方式就可以得到容器的root用户的密码了。
+  docker logs 5817938c3f6e 2>&1 | grep 'User: ' | tail -n1
+
+14.设置容器开机启动
+  使用在Docker run的时候使用--restart参数来设置。 
+  no - container：不重启 
+  on-failure - container:退出状态非0时重启 
+  always:始终重启
+  docker run --restart=always --name first-mysql -p 3306:3306 -e MYSQL\_ROOT\_PASSWORD=123456 -d mysql:latest
+
+15.Docker容器内应用服务自启动
+  如果想把Docker容器内的应用服务随着容器开启时自启动。只需要将服务启动的脚本写在Dockerfile里，然后用Dockerfile重构镜像即可实现：
+  编写应用服务自启动脚本
+  编写Dockerfile
+  重构镜像
+  开启容器
+
+16.docker文件存放目录
+  Docker实际上把所有东西都放到/var/lib/docker路径下了。
+
+
+修改镜像位置:
+docker --version 
+
+vi /etc/sysconfig/docker-storage
+DOCKER_STORAGE_OPTIONS=--graph="要保存的路径"
+
+或者
+
+DEVS=/dev/vdb
+DATA_SIZE=800GB（更改docker默认存储大小）
+
+
+expose: 提供container之间的端口访问，不会暴露给主机使用。
+
+
+17、
+docker mysql
+
+docker run --restart=always -e MYSQL_ROOT_PASSWORD=Sinter#^ --name mysql -v /data/mysql/my.cnf:/etc/mysql/my.cnf -v /data/mysql/data:/usr/data/ -p 3306:3306 -d mysql:5.6
+docker run --restart=always --name=mongotest -p 27017:27017 -v /data/mongodb/data:/data/db -v /data/mongodb/config:/data/configdb -d mongo
+docker run --restart=always --name my-nginx -p 80:80 -v /data/nginx/html:/usr/share/nginx/html:ro -v /data/nginx/logs:/var/log/nginx -v /data/nginx/nginx.conf:/etc/nginx/nginx.conf:ro -d nginx
+docker run --restart=always --name redis -p 6379:6379 -v /data/redis:/data -d redis:3.0.6 redis-server /data/redis.conf 
+注意: redis.conf 中的 daemonize yes 需要注释掉
+
+
+docker run --restart=always --name my-nginx -p 90:80 -v /data/nginx/html:/usr/share/nginx/html:ro -v /data/nginx/logs:/var/log/nginx -v /data/nginx/nginx.conf:/etc/nginx/nginx.conf:ro -d nginx
+
+
+docker pull rabbitmq:management
+docker run  --restart=always -d --name rabbitmq -p 15672:15672 -p 5672:5672 rabbitmq:management
+
+docker pull wurstmeister/zookeeper  
+docker pull wurstmeister/kafka
+
+docker run --restart=always -d --name zookeeper -p 2181:2181 -t wurstmeister/zookeeper 
+docker run --restart=always -d --name kafka -e HOST_IP=localhost -e KAFKA_ADVERTISED_PORT=9092 -e KAFKA_BROKER_ID=1 -e ZK=zk -p 9092:9092 --link zookeeper:zk -t wurstmeister/kafka  
+docker run --restart=always -d --name kafka -e HOST_IP=localhost -e KAFKA_ADVERTISED_HOST_NAME=192.168.1.101 -e KAFKA_ADVERTISED_PORT=9092  -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://192.168.1.101:9092   -e KAFKA_BROKER_ID=1 -e ZK=zk -p 9092:9092 --link zookeeper:zk -t wurstmeister/kafka:0.10.1.1
+
+
+bin/kafka-topics.sh --create --zookeeper zookeeper:2181 --replication-factor 1 --partitions 1 --topic mykafka  
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic mykafka  
+bin/kafka-console-consumer.sh --zookeeper zookeeper:2181 --topic mykafka --from-beginning
+
+http://blog.csdn.net/snowcity1231/article/details/54946857
+
+
+docker run --restart=always --name postgresql10   -e POSTGRES_PASSWORD=123456 -p 5432:5432 -d postgres:10.1
+
+advertised.host.ip=192.168.1.101  
+advertised.host.name=192.168.1.101                                                                                                       
+advertised.port=9092  
+
+查看创建的所有topic
+./kafka-topics.sh --list --zk localhost:2181 
+
+删除某个topic
+./kafka-topics.sh --delete --zookeeper zk:2181 --topic kafka-test
+
+
+
+18、启动工具
+ docker-compose
+   yum -y install epel-release
+   yum -y install python-pip
+   pip install --upgrade pip
+   pip install docker-compose
+   pip uninstall docker-compose
+   
+  docker-compose --version
+  docker-compose up -d //后台运行
+  docker-compose ps //查看容器运行状态
+  其中:
+    //depends_on 依赖其它容器
+ 
+参考: https://www.cnblogs.com/52fhy/p/5991344.html
+
+
+19、docker 端口映射错误解决方法：
+ 描述:COMMAND_FAILED: '/sbin/iptables -t nat -A DOCKER -p tcp -d 0/0 --dport 8111 -j DNAT --to-destination 172.17.0.6:8111 ! -i docker0' failed: iptables: No chain/target/match by that name.
+ 解决:
+ pkill docker
+ iptables -t nat -F
+ ifconfig docker0 down
+ brctl delbr docker0
+
+重启docker后解决
+
+
+###
+测试环境:
+  docker run --restart=always -e MYSQL_ROOT_PASSWORD=TestInit --name scloud_init -v /data/mysql_scloud_init/my.cnf:/etc/mysql/my.cnf -v /data/mysql_scloud_init/data:/usr/data/ -p 3307:3306 -d mysql:5.6
+  docker run --restart=always -e MYSQL_ROOT_PASSWORD=TestImport --name scloud_import -v /data/mysql_scloud_import/my.cnf:/etc/mysql/my.cnf -v /data/mysql_scloud_import/data:/usr/data/ -p 3308:3306 -d mysql:5.6
+  docker run --restart=always -e MYSQL_ROOT_PASSWORD=TestScloud --name scloud_test -v /data/mysql_scloud_test/my.cnf:/etc/mysql/my.cnf -v /data/mysql_scloud_test/data:/usr/data/ -p 3309:3306 -d mysql:5.6
+
+开发环境 
+  docker run --restart=always -e MYSQL_ROOT_PASSWORD=dev123456 --name dev_check -v /data/mysql_check/my.cnf:/etc/mysql/my.cnf -v /data/mysql_check/data:/usr/data/ -p 3307:3306 -d mysql:5.6
+  
+  docker run --restart=always -e MYSQL_ROOT_PASSWORD=123456 --name mysql_otter -v /data/mysql_otter/my.cnf:/etc/mysql/my.cnf -v /data/mysql_otter/data:/usr/data/ -p 3411:3306 -d mysql:5.6
+  
+  docker run --restart=always -e MYSQL_ROOT_PASSWORD=devQSW --name mysql_xx -v /data/mysql_xx/my.cnf:/etc/mysql/my.cnf -v /data/mysql_xx/data:/usr/data/ -p 3422:3306 -d mysql:5.6
+
+  docker run --restart=always -e MYSQL_ROOT_PASSWORD=dev123456 --name mysql_init -v /data/mysql_init/my.cnf:/etc/mysql/my.cnf -v /data/mysql_init/data:/usr/data/ -p 3307:3306 -d mysql:5.6
+  
+
+create user xxljob identified by 'xxljob123'
+
+grant insert,delete,update,select,drop,create,alter on `xxl-job`.* to `xxljob`@`%`
+
+appraisal   dev123

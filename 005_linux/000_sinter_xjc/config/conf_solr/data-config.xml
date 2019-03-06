@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<dataConfig>
+<dataSource name="source1" type="JdbcDataSource" driver="oracle.jdbc.driver.OracleDriver" url="jdbc:oracle:thin:@//192.168.1.40:1521/orcl" user="smartfit603" password="smartfit603" /> 
+<document>
+  <entity name="FB_APP_HOTWORDS" pk="id" dataSource="source1" 
+      query="select * from fb_app_hotwords"
+	  deltaImportQuery="select * from fb_app_hotwords where id='${dih.delta.id}'" 
+	  deltaQuery="select * from fb_app_hotwords where and modifydate > '${dataimporter.last_index_time}'">
+      
+	  <field column="ID" name="id"/>
+      <field column="HOTWORDS" name="hotwords"/>
+      <field column="QUERYTIMES" name="querytimes"/>
+	  <field column="CREATEDATE" name="createdate"/>
+	  <field column="WEIGHT" name="weight"/>
+	  <field column="STICK" name="stick"/>
+	  <field column="MODIFYDATE" name="modifydate"/> 
+	  <field column="VERSION" name="version"/>
+	  <field column="COMMETS" name="commets"/>
+
+  </entity>
+</document>
+</dataConfig>

@@ -1,0 +1,17 @@
+firewall
+* ¿ª·Å¶Ë¿Ú80
+		firewall-cmd --zone=public --add-port=80/tcp --permanent
+		firewall-cmd --reload
+
+https://www.cnblogs.com/moxiaoan/p/5683743.html
+ #×´Ì¬ systemctl status firewalld.service  
+	 firewall-cmd --state
+ #¿ªÆô systemctl start firewalld.service 
+ #Í£Ö¹ systemctl stop firewalld.service
+ #½ûÖ¹ systemctl disable firewalld.service 
+
+iptables
+
+iptables -I INPUT -p tcp --dport 8080 -j ACCEPT
+service iptables save
+service iptables reload

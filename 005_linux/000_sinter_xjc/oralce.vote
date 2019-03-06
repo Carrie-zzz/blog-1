@@ -1,0 +1,281 @@
+setup:
+  1、oracle要求/dev/shm大于物理内存
+	 永久更改/etc/fstab
+	 tmpfs  	/dev/shm            tmpfs  defaults,size=10g      0 0
+	 
+	 即时更改
+	 mount -t tmpfs shmfs -o size=10g /dev/shm
+	 
+  2、安装各种表
+	yum -y install gcc gcc-c++ glibc glibc-devel glibc-headers ksh libaio libaio-devel libgcc libstdc++ libstdc++-devel make sysstat unixODBC unixODBC-devel zlib-devel unzip compat-libcap1 compat-libstdc++-33
+  3、关闭防火墙
+     #停止 systemctl stop firewalld.service
+     #禁止 systemctl disable firewalld.service 
+  4、/etc/hosts 加入本机IP与机器名的映射
+     192.168.0.119   dora
+  5、/etc/sysctl.conf 加入配置(/sbin/sysctl -p 生效)
+		fs.file-max = 6815744  
+		kernel.sem = 250 32000 100 128  
+		kernel.shmmni = 4096  
+		kernel.shmall = 1073741824  
+		kernel.shmmax = 4398046511104  
+		kernel.panic_on_oops = 1  
+		net.core.rmem_default = 262144  
+		net.core.rmem_max = 4194304  
+		net.core.wmem_default = 262144  
+		net.core.wmem_max = 1048576  
+		net.ipv4.conf.all.rp_filter = 2  
+		net.ipv4.conf.default.rp_filter = 2  
+		fs.aio-max-nr = 1048576  
+		net.ipv4.ip_local_port_range = 9000 65500
+   6、/etc/security/limits.d/20-nproc.conf 	加入配置
+		oracle   soft   nofile    1024  
+		oracle   hard   nofile    65536  
+		oracle   soft   nproc    16384  
+		oracle   hard   nproc    16384  
+		oracle   soft   stack    10240  
+		oracle   hard   stack    32768  
+		oracle   hard   memlock    134217728  
+		oracle   soft   memlock    134217728 	 
+    7、创建用户和组
+         groupadd -g 54321 oinstall	
+		 groupadd -g 54322 dba  
+		 groupadd -g 54323 oper
+		 useradd -u 54321 -g oinstall -G dba,oper oracle
+		 echo mdxjc208 | passwd --stdin oracle 
+    8、 创建文件
+	     mkdir -p /u01/app/oracle/product/12.2.0/db_1
+	     chown -R oracle:oinstall /u01
+	     chmod 775 /u01
+	9、  配置环境变量 /home/oracle/.bash_profile 或/etc/profile (source 文件名 生效)
+		# Oracle Settings  
+		export TMP=/tmp  
+		export TMPDIR=$TMP  
+		  
+		export ORACLE_HOSTNAME=centos7  
+		export ORACLE_UNQNAME=cdb1  
+		export ORACLE_BASE=/u01/app/oracle  
+		export ORACLE_HOME=$ORACLE_BASE/product/12.2.0/db_1  
+		export ORACLE_SID=cdb1 
+		  
+		export PATH=/usr/sbin:$PATH  
+		export PATH=$ORACLE_HOME/bin:$PATH  
+		  
+		export LD_LIBRARY_PATH=$ORACLE_HOME/lib:/lib:/usr/lib  
+		export CLASSPATH=$ORACLE_HOME/jlib:$ORACLE_HOME/rdbms/jlib
+	
+	10、su oracle 切换用户
+	
+	11、./runInstaller -force -silent -noconfig -responseFile /opt/database/db_install.rsp  
+	安装完后 root下执行
+	   /u01/app/oracle/oraInventory/orainstRoot.sh  
+	   /u01/app/oracle/product/12.2.0/db_1/root.sh  
+	
+	对应配置文件如下
+	oracle.install.responseFileVersion=/oracle/install/rspfmt_dbinstall_response_schema_v12.2.0  
+	oracle.install.option=INSTALL_DB_SWONLY  
+	UNIX_GROUP_NAME=oinstall  
+	INVENTORY_LOCATION=/u01/app/oracle/oraInventory  
+	ORACLE_HOME=/u01/app/oracle/product/12.2.0/db_1  
+	ORACLE_BASE=/u01/app/oracle  
+	oracle.install.db.InstallEdition=EE  
+	oracle.install.db.OSDBA_GROUP=dba  
+	oracle.install.db.OSOPER_GROUP=oper  
+	oracle.install.db.OSBACKUPDBA_GROUP=dba  
+	oracle.install.db.OSDGDBA_GROUP=dba  
+	oracle.install.db.OSKMDBA_GROUP=dba  
+	oracle.install.db.OSRACDBA_GROUP=dba  
+	oracle.install.db.config.starterdb.type=GENERAL_PURPOSE  
+	oracle.install.db.config.starterdb.globalDBName=cdb1  
+	oracle.install.db.config.starterdb.SID=cdb1  
+	oracle.install.db.config.starterdb.characterSet=AL32UTF8  
+	SECURITY_UPDATES_VIA_MYORACLESUPPORT=false  
+	DECLINE_SECURITY_UPDATES=true  
+  
+  
+    12、netca -silent -responsefile /opt/database/netca.rsp  
+	
+	     cat ./netca.rsp | grep -Ev '^#|^$'
+		 
+	  配置文件不需要变化       
+	  查看: lsnrctl status
+	  
+	    [GENERAL]
+		RESPONSEFILE_VERSION="12.2"
+		CREATE_TYPE="CUSTOM"
+		[oracle.net.ca]
+		INSTALLED_COMPONENTS={"server","net8","javavm"}
+		INSTALL_TYPE=""typical""
+		LISTENER_NUMBER=1
+		LISTENER_NAMES={"LISTENER"}
+		LISTENER_PROTOCOLS={"TCP;1521"}
+		LISTENER_START=""LISTENER""
+		NAMING_METHODS={"TNSNAMES","ONAMES","HOSTNAME"}
+		NSN_NUMBER=1
+		NSN_NAMES={"EXTPROC_CONNECTION_DATA"}
+		NSN_SERVICE={"PLSExtProc"}
+		NSN_PROTOCOLS={"TCP;HOSTNAME;1521"}
+	
+	13、dbca -silent -createDatabase  -responseFile  /opt/database/dbca.rsp (设置密码：Mdxjc208)
+			
+			cat ./dbca.rsp | grep -Ev '^#|^$'
+	   
+			参考配置如下:(有值设置的)
+			responseFileVersion=/oracle/assistants/rspfmt_dbca_response_schema_v12.2.0
+			gdbName=cdb1
+			sid=cdb1
+			databaseConfigType=SI
+			RACOneNodeServiceName=
+			policyManaged=
+			createServerPool=
+			serverPoolName=
+			cardinality=
+			force=
+			pqPoolName=
+			pqCardinality=
+			createAsContainerDatabase=true
+			numberOfPDBs=1
+			pdbName=cdb1pdb
+			useLocalUndoForPDBs=
+			pdbAdminPassword=
+			nodelist=
+			templateName=/u01/app/oracle/product/12.2.0/db_1/assistants/dbca/templates/General_Purpose.dbc
+			sysPassword=
+			systemPassword= 
+			oracleHomeUserPassword=
+			emConfiguration=
+			emExpressPort=5500
+			runCVUChecks=
+			dbsnmpPassword=
+			omsHost=
+			omsPort=
+			emUser=
+			emPassword=
+			dvConfiguration=
+			dvUserName=
+			dvUserPassword=
+			dvAccountManagerName=
+			dvAccountManagerPassword=
+			olsConfiguration=
+			datafileJarLocation={ORACLE_HOME}/assistants/dbca/templates/
+			datafileDestination={ORACLE_BASE}/oradata/{DB_UNIQUE_NAME}/
+			recoveryAreaDestination={ORACLE_BASE}/fast_recovery_area/{DB_UNIQUE_NAME}
+			storageType=
+			diskGroupName=
+			asmsnmpPassword=
+			recoveryGroupName=
+			characterSet=AL32UTF8
+			nationalCharacterSet=
+			registerWithDirService=
+			dirServiceUserName=
+			dirServicePassword=
+			walletPassword=
+			listeners=LISTENER
+			variablesFile=
+			variables=
+			initParams=
+			sampleSchema=
+			memoryPercentage=40
+			databaseType=
+			automaticMemoryManagement=
+			totalMemory=0
+	
+    14、管理及查看
+		sqlplus / as sysdba 
+			shutdown immediate; //关闭
+			startup; //开始
+			select open_mode from v$database; 
+			select status from v$instance; 
+   
+			alter user sys identified by 123456;
+			password system;
+ 
+			create user c##xjc identified by 123456;
+			grant connect,resource,dba to c##xjc;
+   
+    //登录用户: SYSTEM / 设置的密码
+
+15、开机启动:
+   vi /etc/oratab
+      orcl:/u01/app/oracle/product/12.2.0/db_1:N N改为Y
+
+   vi /etc/rc.d/rc.local
+      su oracle -lc "/u01/app/oracle/product/12.2.0/db_1/bin/lsnrctl start"
+      su oracle -lc /u01/app/oracle/product/12.2.0/db_1/bin/dbstart  
+	  
+	  su oracle -lc "$ORACLE_HOME/bin/lsnrctl start"
+      su oracle -lc $ORACLE_HOME/bin/dbstart  
+
+
+  pdb随机启动: 使用SYS用户创建如下触发器即可：
+	conn / as sysdba
+     alter pluggable database orclpdb open;
+	 alter pluggable database orclpdb save state;---->>注意此命令(其实此命令从12.1.0.2开始就有了).    
+	   
+16、其它:	
+  TNS服务:
+  lsnrctl start 即可启动
+  lsnrctl stop  停止服务
+  lsnrctl status  查看状态
+
+  startup 找不到*.ora文件
+     find / -name init.ora.* 找到进行替换
+	 
+  show con_name
+  
+  切换到pdb
+  show pdbs
+  alter session set container=ORCLPDB; 
+  alter pluggable database ORCLPDB open; 
+  alter pluggable database  all open;  
+  
+  切回到 CDB;
+  alter session set container=CDB$ROOT;   
+  
+  $ORACLE_HOME/network/admin/tnsnames.ora 增加pdb
+  
+  查看pdb错误:
+  
+  select name,cause,type,message,status from PDB_PLUG_IN_VIOLATIONs order by name;  
+
+   
+  oratop工具
+  goldengate工具
+  
+17、goldgate
+  ./runInstaller -silent -responseFile /sharefile/fbo_ggs_Linux_x64_shiphome/fbo_ggs_Linux_x64_shiphome/Disk1/oggcore.rsp
+  
+  export OGG_HOME=/u01/app/ogg/product/12.2.0/dbhome_1
+  export PATH=$OGG_HOME:$PATH
+  
+  cd $OGG_HOME
+  ggsci
+  
+    start mgr
+	stop mgr
+	
+	info all
+	edit param mgr
+	PORT 7809
+	
+18、rlwrap
+   yum install -y readline*
+   ./configure  
+   make && make install
+   which rlwrap
+   
+   alias sqlplus='rlwrap sqlplus'
+   alias rman='rlwrap rman'
+   alias ggsci='cd $OGG_HOME; rlwrap ./ggsci'
+  
+	
+	
+ http://blog.csdn.net/huangyanlong/article/details/32973417
+ http://blog.csdn.net/cloudsnowe/article/details/51613364 12c
+	 
+参考:
+  http://blog.csdn.net/jc_benben/article/details/69911904 12c r2
+  http://www.cnblogs.com/siyunianhua/p/4004361.html 不能创建用户
+  http://www.jianshu.com/p/36a78274a00e
+  
+  http://www.cnblogs.com/xi52qian/p/4187039.html centos7安装11g

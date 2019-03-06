@@ -1,0 +1,41 @@
+step:
+  http://blog.csdn.net/u013980127/article/details/52287545
+
+cmd:
+  $HADOOP_HOME/bin/hdfs namenode -format
+
+  $HADOOP_HOME/sbin/start-all.sh
+  $HADOOP_HOME/sbin/stop-all.sh
+
+  $HADOOP_HOME/sbin/start-dfs.sh
+  $HADOOP_HOME/sbin/start-yarn.sh
+
+  $HADOOP_HOME/sbin/stop-dfs.sh
+  $HADOOP_HOME/sbin/stop-yarn.sh
+
+  $HADOOP_HOME/sbin/hadoop-daemon.sh start datanode 
+  
+  $HADOOP_HOME/sbin/mr-jobhistory-daemon.sh start historyserver  
+  $HADOOP_HOME/sbin/mr-jobhistory-daemon.sh stop historyserver  
+
+url:
+  http://192.168.10.107:8088
+  http://192.168.10.107:50070
+
+
+config:
+  \cp -f /opt/script/hadoop_node/* /opt/hadoop-3.7.4/etc/hadoop 
+  
+问题1:
+  windows上 http://blog.csdn.net/xubo245/article/details/50587660
+
+  org.apache.hadoop.io.nativeio 加入NativeIO
+  在project下新建package：org.apache.hadoop.io.nativeio将NativeIO.java文件copy过来。修改acccess0行：
+  
+测试:
+  提交:
+  hadoop jar $usrjar org.apache.hadoop.examples.WordCount $input $output  
+  $HADOOP_HOME/bin/hadoop jar /sharefile/demo-mapreduce-0.0.1.jar /demo/input  /demo/output/wc_mapreduce_`date '+%Y%m%d%H%M%S'`
+
+  
+  
