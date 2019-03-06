@@ -1,0 +1,82 @@
+	<?xml version="1.0" encoding="UTF-8" ?>
+	<!DOCTYPE configuration
+	  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+	  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+	<configuration>
+		<!-- 特性 ，读取配置文件 ：value=${key}  egvalue=:${jdbc.driver}  -->
+		<properties resource="jdbc.properties" />
+
+		<!-- 全局配置参数 :开启二级缓存 ，开启延迟载-->
+		<settings ></settings>
+
+		<!-- 定义别名 -->
+		<typeAliases>
+			<!-- 单个设置 -->
+			<!-- <typeAlias type="com.huaxin.bean.HxUser" alias="hxUser" /> -->
+			<!-- <typeAlias type="com.huaxin.bean.Tt" alias="tt" /> -->
+			<!-- 别名整个包定义 ，Student 首字母大小写都可以-->
+			<package name="com.huaxin.bean"/>		
+		</typeAliases>
+	
+	
+		<!-- 类型处理器用于java类型和jdbc类型映射 -->
+		<typeHandlers ></typeHandlers>
+
+
+		<!-- 和spring整合后 environments配置将废除 -->
+		<environments default="development">
+			<environment id="development">
+				<!-- 使用jdbc事务管理 -->
+				<transactionManager type="JDBC" />
+				<!-- 数据库连接池 -->
+				<dataSource type="POOLED">
+					<property name="driver" value="${jdbc.driver}" />
+					<property name="url" value="${jdbc.url}" />
+					<property name="username" value="${jdbc.username}" />
+					<property name="password" value="${jdbc.password}" />
+				</dataSource>
+			</environment>
+		</environments>
+	
+		<!-- 配置mapper映射文件 -->
+		<mappers>
+			<!-- 加载单个映射文件 ： 原始dao使用 -->
+			 <mapper resource="HxUserMapper.xml" />
+			 <mapper resource="TtMapper.xml" /> 
+
+			<!-- <mapper resource="com/huaxin/mapper/HxUserMapper.xml"/> -->
+			<!-- <mapper class="com.huaxin.mapper.HxUserMapper" /> -->
+
+			<!--批量mapper扫描 遵循规则：将mapper.xml和mapper.java文件放在一个目录 且文件名相同 -->
+			<!-- <package name="com.huaxin"/> -->
+		</mappers>
+	
+	</configuration>
+
+
+
+
+# 缓存 #
+## 一级缓存 Hashmap存储 ##
+	开启：默认开启
+	范围：sqlSession()
+	在同一个SqlSession中，两次执行相同的sql查询，第二次不再从数据库查询
+	清除：SqlSession.commit()
+	如果第一次查询后，执行commit提交，mybatis会清除缓存，第二次查询从数据库查询
+	SqlSession.close()
+## 二级缓存 ##
+**开启：**
+
+		在核心配置文件SqlMapConfig.xml中加入，表示打开二级缓存开关
+		<setting name="cacheEnabled" value="true"/>
+		statement启用二级缓存，设置useCache=true（默认值为true）
+
+**范围：mapper的namespace**
+
+		相同的namespace使用一个二级缓存结构
+		清除：
+		执行statement需要清除，在statement中设置flushCache="true" （默认值 是true,如果false  update都不会更新到新数据）
+		要求：
+		pojo 实现Serializable接口
+
+		可以控制长时间不刷新（统计），也可以控制每次都刷新数据（股票）
