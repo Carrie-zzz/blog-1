@@ -362,18 +362,36 @@
 					1. 改变 isLock=false  
 					2. notify
 22. AQS  Abstractcynchronizer  AbstractQueuedSynchronizer
+	1. 描述
+		1. 等待队列(FIFO)阻塞锁和相关同步器提供一个框架
+		2. 单个原子int值来表示状态,大多数同步器有用
+		3. 支持 独占和共享模式
+			1. 独占模式,其他线程无法获得锁
+			2. 共享模式,对个线程可能获取到锁,但不一定可以获取到
+	2. 方法
+		1. tryAcquire	独占 lock
+		2. tryRelease	独占 unlock
+		3. tryAcquireShared
+	3. 计数器内部实现/引用 一个aqs的实现,然后调用
+		1. ReentrantLock
 
 
-23. 
+23. AQS  锁实现
+	1. getState	int值可以表示重入的次数
+	2. currentThread
+	3. 重入
 
-
-
+24. 重入锁,公平锁
+	1. 公平锁(锁获取)
+		1. 如果一个锁是公平的,那么所的获取顺序就应该符合请求的绝对时间顺序
+		2. 队列维护
+	
 25. 读写锁  
-	1. 写锁:排他锁,效率低,只能有一个线程操作
-	2. 读锁:共享锁share,效率稍高,多个线程共同进入
+	1. 写锁:**排他锁**,效率低,只能有一个线程操作
+	2. 读锁:**共享锁**share,效率稍高,多个线程共同进入
 
-	1. ReentrantReadWriteLock
-		1. readLock	
+	1. **ReentrantReadWriteLock**
+		1. Lock l = readLock	
 		2. writeLock
 			1. lock
 			2. unlock
@@ -383,13 +401,96 @@
 	3. 读读不互斥,很快
 		2. a.await();
 	
-26. 读写锁实现
+	1. get  set  sleep 
+	2. 线程 读 读  , 读写  写写, 测试	
+
+26. 读写锁实现原理
+	1. ReentrantReadWriteLock
+		1. 内部类  ReadLock,WriterLock  实现lock
+		2. Sync 同步器 继承 AQS,  FairSync,NonFairSync 继承sync
+			1. 读锁
+				3. firstReader 线程,  
+				4. firstReaderHoldCount++ 重入次数
+				5. 
+			 
+	2. 问题
+		1. 写锁的重入次数(只有一个),
+			1.  state & (1<<16)-1    65536-1= Max_Count 最大值
+			2.  int 低2位个数,保存了重入次数
+			3.  重入次数不能大于 最大值 65535
+			4.  低位写锁
+			5.  setState( getState()+acquires )
+		2. 读锁的重入次数
+			1. state >>> 16  
+			2. 高位读锁
+			3. setState(c+ 1<<16)
+		3. 读锁的个数
+			1. 底层使用ThreadLocal<HoldCounter>子类 ,每个线程创建一个,保存在
+				1. HoldCounter.count++  每个读线程的重入次数
+			2. readHolds
+
+	3. int 4byte  32位
+		1. 1111 1111 1111 1111 -- 1111 1111 1111 1111
+		1. 前16位表示一个锁的状态
+		2. 后16位表示另外一个锁的状态
+		3. 低位写锁,高位读锁
+			1. &
+			2. >>> 无符号右移动  读锁数目
 
 
 27. 读写锁-锁降级(写->读),
-	* 写锁里面嵌套读锁,嵌套在写完毕,释放写锁之前
- 
+	* 写锁降级为读锁
+		* 写锁没有释放的时候,获取到的读锁,再释放写锁
+		* 写锁里面嵌套读锁,嵌套在写完毕,释放写锁之前
+``` 		
+ w.lock
+ ...
+ r.lock //降级
+ w.unlock
+```			
+	* 锁升级(ReentrantReadWriteLock 不支持)
+		* 读锁升级为写锁
+			* 在读锁没有释放的时候,获取写锁,在释放读锁
+				* 获取不到
+				* 
+
 28. 总结
+	1. 出现线程安全问题的条件
+		1. 多线程
+		2. 共享资源
+		3. 非原子性操作
+	2. 解决线程安全问题的方法
+		1. synchronized
+			1. 偏向锁
+			2. 轻量级
+			3. 重量级
+			4. 重入锁
+		2. volatile
+			1. 线程可见性
+			2. 不能保证原子性操作
+		3. 原子类 atomic
+		4. Lock
+			1. aqs
+			2. 共享锁,独占锁(排他锁)
+	3. 锁
+			1. 偏向锁
+			2. 轻量级
+			3. 重量级
+			4. 重入锁
+			5. 自旋锁
+			6. 共享锁
+			7. 独占所
+			8. 排它锁
+			9. 读写锁
+			10. 公平锁
+			11. 非公平锁
+			12. 死锁
+			13. 活锁
+
+----------
+
+----------
+ 
 
 29. 线程之间通行 wait,notify
 	1. 在syn里面
