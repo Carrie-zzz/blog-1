@@ -360,7 +360,7 @@
 				1. 全局 重入次数  lockCount--
 				2. 当全局重入次数lockCount == 0
 					1. 改变 isLock=false  
-					2. notify
+					2. notify`
 22. AQS  Abstractcynchronizer  AbstractQueuedSynchronizer
 	1. 描述
 		1. 等待队列(FIFO)阻塞锁和相关同步器提供一个框架
@@ -471,7 +471,7 @@
 		3. 原子类 atomic
 		4. Lock
 			1. aqs
-			2. 共享锁,独占锁(排他锁)
+			2. 共享锁,独占锁(排他锁) 
 	3. 锁
 			1. 偏向锁
 			2. 轻量级
@@ -493,39 +493,213 @@
  
 
 29. 线程之间通行 wait,notify
-	1. 在syn里面
-	2. 谁syn,谁调用wait,notify
-	3. notify 随机叫醒
+	1. 解决多个线程之间协作 , 一个线程依赖另外一个线程计算结果/通知信号
+	2. 耗性能
+		1. 通过 volatile 变量,一个线程执行完,把变量改变,
+		2. 另一个线程 while空转,等变量改变,然后执行
+	3. 等待,唤醒方法
+		1. 在syn(d)里面
+		2. 谁syn,谁调用wait,notify
+			1. d.wait
+		3. notify 随机叫醒
+		4. notifyAll 叫醒所有的
+			1. 叫醒只是从 wait pool 到 lock pool ,
+			2. 需要执行notify的线程释放或者其他线程释放锁资源后在竞争锁资源
+			3. 不同对象 不同wait notify,不同对象叫醒各自的对象
 
 30. 生产者消费者
+	1. Tmall : 必须只有一个
+		1. count 当前产品数目
+		2. maxCount 最大数目
+		3. 生产 push 方法  
+			1. 加锁
+			2. 最大值 ,wait
+			3. count++
+		4. 消费 take
+			1. 加锁
+			2. 小于0 wait
+	2. Producer  implements
+		1. tmall 构造方法应用
+		2. while  push  sleep
+		3. notify / notifyAll
+	3. Comsumer
+		1. tmall 构造方法应用
+		2. while  take  sleep
+	4. jconsole -> 看到线程 waiting状态 
 
 31. condition
 	1. 能够制定,叫醒条件
-	2. 步骤
+	2. api
+		1. await
+		2. signal  == notify
+	3. 步骤
 		1. 创建ReentrantLock
-		2. lock.创建Condition
+		2. lock.newCondition
 		3. b.signal
+		4. notify / notifyAll
+	4. a b c 三个线程 顺序执行 
+		1. wait/ notifiAll
+			1. int 变量 ++  
+			2. 所有线程 while !=判断 1/2/3  wait
+			3. 然后 执行  notifyAll  变量++
+			4. 最后 变量=1
+		2. 三把锁
+			1. Lock lock = new ReentrantLock();
+			2. Condtion a= lock.newCondition();
+			3. 每个方法 
+				1. 加锁  
+				2. while !=判断 1/2/3  wait改成a.await/b.await/c.await ...  
+				3. b.signal(a执行完毕叫醒b) c.signal a.signal
+				4. 变量++;
+				4. 释放锁 
 
+32. condition改生产者消费者
+	1. synchronized -> lock.lock()
+	2. wait->  condition.await
+	3. notifyall -> condition.signal
 
-37. CountDownLatch 
-	1. await
-	2. countDown()   -1
-	3. getCount()
+ 	1. 等待队列    wait pool
+	2. 同步队列	  lock pool
+
+	1. 实现有界队列 FIFO
+		1. add
+			1. 等待队列Z
+		2. remove
+33. condition源码
+	1. ReentrantLock->newCondition-> new ConditionObject();
+	2. ConditionObject impliment Condition
+			* await
+				* 加入等待队里 addConditionWaiter
+				* 释放锁  fullyRelease
+				* 判断是否在同步队列
+				* 放入同步队列 acquiredQueued
+				* 如果还有next节点 
+			* signal
+				* 是否是独占锁
+					* 抛异常
+				*第一个节点不空,就释放 doSignal
+					* 
+	4. 多个condition就有多个 等待队列 		
+
+34. 数据库连接池
+	1. LinkedList pool
+	2. ConnectionUtil
+		1. get
+			1. 加锁
+			1. while 判断是否pool size >0 等待 wait await
+			2. removeFirst
+			3. 释放
+		2. release
+			1. 加锁
+			2. addLast
+			3. 唤醒  notifiAll  signal
+			4. 释放
+
+35. join
+	1. 线程加塞
+	2. 线程a里面,遇到b.join 或者 join(millis), b先要执行完毕后a执行
+	3. 实现
+		1. 加锁 synchronized  ,锁的是主线程/其他非加塞线程
+			while(this.isAlive())  //加塞线程!!!
+				wait(0);    // 主线程/其他非加塞线程
+			notifyAll  //主线程/其他非加塞线程
+
+36. ThreadLocal<T> 线程局部变量
+	1. 方法
+		1. get
+			
+		2. set
+		3. remove
+		3. initialValue  // 初始值 
+	2. get
+		1. 获取当前线程
+		2. 通过线程t,拿到TheadlocalMap
+			1. t.threadLocals, 
+			2. 当线程创建的时候,线程实例化了一个, ThreadLoacal.ThreadlLocalMap map =..
+			3. TheadLocalMap是ThreadLocal 静态内部类
+			4. Entry extends WeekReference<ThreadLocal> 是ThreadLocalMap的静态内部类
+				1. key ThreadLocal
+				2. value value
+
+		3. 通过map获取 Entty e=  map.getEntry(this);
+		4. 返回e
+		5. 第一次会调用 initialValue	方法 ,创建 TheadlocalMap
+	3. set
+		1. 获取当前线程
+		2. 过去map
+		3. map.set t,value  /createMap
+	4. remove
+		1. 获取map
+		2. m.remove	
+			
+37. CountDownLatch 使用  锁存器计数
+	1. 介绍
+		1. 同步辅助类,在一组线程完成操作之前,运行一个或多个线程一直等待
+		2. 用给定的计数器初始化countDownLatch,调用countDown() --
+		3. 当计数器达到0之前,await方法一直阻塞
+		4. 之后释放所有等待线程,只能用一次.如果需要多次请使用CyclicBarrier
+	2. api	
+		1. await await(timeout,TimeUnit) 其锁存器!=0等待,除非线程中断	
+		2. countDown()   锁存器值 -1,如果==0了,则释放所有的等待线程
+		3. getCount()
 	4. 当计数器==0的时候,唤醒所有await的线程
-38. CyclicBarrier 循环的 栅栏
-	1. 当达到技术点count个数的时候触发
-	2. dowait
-	3. await
-	4. 
+	
+38. CyclicBarrier(int parties) /(parties,Runnable barrierAction)   使用 循环的 栅栏
+	1. 介绍
+		1. 开会,几个人到达等待await,某个点(时间点),然后执行
+		2. 当达到 计数点count个数(人到齐) 的时候触发
+		3. 同步辅助类,一组线程相互等待,直到达到某个公共屏障点 common barrier point
+		4. 在达到 释放等待线程之后,还可以重用,所有事循环的
+	2. 构造方法
+		1.  CyclicBarrier(int parties)
+			1.  当调用await的次数达到 parties后, 线程自动唤醒
+			2.  如果一个线程异常,达不到屏障点,一直会等待
+		2.  CyclicBarrier(parties,Runnable barrierAction)
+			1.  达到屏障点时候,马上执行(在唤醒所有线程之前)
+			2.  类似一个回调
+	3. api
+		1. await   
+
+
 39. Semaphore	信号
-	1. 指定信号个数
-	2. 
-40. Exchanger  2个线程 数据对比 
+	1. 指定信号个数,max线程个数
+	2. api
+		1. acquire  一般线程开始,进入等待,看
+		2. release  一般线程结束,退出
+	3. 类似线程池 , 固定大小fixd 
 
 
+40. Exchanger<T>  2个线程 数据对比 
+	 1. api
+		 1. exchange(T t)->T t
+	 2. 线程一 exchange  ,  线程二  T result t = exchange(t); 对比
+	 3. 遗传算法,管道算法	
+
+
+41. CountDownLatch,CyclicBarrier,Semaphore源码
+	1. AbstractQueuedSynchronizer
+		1. tryAcquire
+		2. tryRealease
+		3. tryAcquireShared
+		4. tryReleaseShared
+	1. CountDownLatch	共享锁 syn需要实现 tryAcquireShared
+		1. await	
+			1. syn.acquireInterruptible();
+		2. getCount
+		3. countDown
+			1. syn.releaseShared(1)
+	
+		1. tryAcquireShared
+			1. getState()==0?  1 :-1
+				1. -1 需要等待
+		2. tryReleaseShared
+			1. getState=
+				1. 如果=0  return false ; 不用释放
+				2. !=0 ,  state-1 ,赋值  然后 return state==0; 
+		 
 42. future
 	1. FutureTask 
-		1. get
+
 	2. Callable
 
 
