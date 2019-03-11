@@ -78,8 +78,8 @@
 	6. quartz
 	
 
-
-----------
+# 第二章 #
+--------- 
 
 **模块化开发**
 1. 高内聚,低耦合
@@ -102,26 +102,88 @@
 2. 时间类型  
 	1. datetime 时间更广(常用)
 	2. timestamp 有时区信息	
+3. 状态枚举
+	1. 审核中 2. 销售中 3. 暂停销售 4. 已结束
 
 **订单**
 1. 订单编号, 渠道编号, 产品编号,用户编号,外部订单编号,类型,状态,金额
+2. 订单类型
+	1. 申购 2. 赎回
+3. 订单状态
+	1. 初始化 2. 处理中 3. 成功 4. 失败
+4. @see  com.xxx.xxstatues
 
+**toString**
+1. 自动生成
+2. commons包 里面 
+	1.  ReflectionToStringBuilder.toString(obj,style)
 
+# 第三章 #
+----------
+1. jpa  spring data
+	* JpaRepository<T,T>
+		* Bean
+		* id类型
+	* JpaSpecificationRepository
+	* api
+		* findOne(id)
+		* find
+	* @EntityScan(basePackage={""})
 
+2. dto不用原始类型
+	1. 原始类型默认值0,不能区分是自己设置的还是默认的 
+	2. 一般在dto中使用 类类型,也不设置默认值
+3. 日志
+	1. controller
+		1. info级别
+	2. service
+		1. debug级别
+4. 错误处理
+	1. spring boot document 搜索error
+				https://docs.spring.io/spring-boot/docs
+	2. 不同客户端
+		1. machine clients
+			1. JSON 
+		2. browser clients
+			1. 默认添加 accept:text/html
+	3. 自定义错误
+		1. 继承 BasicErrorController 
+			1. 默认路径 /error
+			2. produces 	
+		2. 切面拦截 @ControllerAdvice
+			1. @ControllerAdvice(basePackageClasses = AcmeController.class)
+		3. Custom Error Pages 自定义错误页面
+			1. 在public/template下面 添加error 文件夹
+			
+	4. jackson配置
+		1. 文档搜索,找到很多配置的那
+			spring.jackson.date-format= # Date format string or a fully-qualified date format class name. For instance, `yyyy-MM-dd HH:mm:ss`.   yyyy-MM-dd HH:mm:ss
+			spring.jackson.time-zone= #  Time zone used when formatting dates. For instance, "America/Los_Angeles" or "GMT+10".						GMT+8   //东8区
+	5. 错误自动配置
+		1. BasicErrorController在 **ErrorMvcAutoConfiguration**
+		2. 在spring boot autoconfigure
+	6. 自定义: 
+		1. 继承 BasicErrorController
+			1. 三个桉树构造方法
+			2. 重写getErrorAttriutes() 方法 // 错误信息
+			3. @Configuration @Bean 注入自己写的类 
+			4. 参数都是自动注入的,写在参数列表后面
+		2. @ControllerAdvice
+			1. 类添加@ControllerAdvice	
+				1. 可以指定 那个包, basePackage
+			2. 方法上面添加 
+				1. @ExceptionHandler(value = MyRemoteServiceException.class)
+				2. @ResponseBody
+			3. 方法参数
+				1. final Exception ex 
+				2. final WebRequest request
+		3. controller异常 -> controllerAdvice 异常 ->  BasicErrorController
+			1. controller异常 ,先到 advice, advice没有异常就正常返回
+			2. advice出现异常,就到BasicErrorController
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+	6. 错误类
+		1. code , message , canRetry
+	
 
 
 
