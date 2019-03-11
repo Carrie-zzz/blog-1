@@ -620,7 +620,6 @@
 			4. Entry extends WeekReference<ThreadLocal> 是ThreadLocalMap的静态内部类
 				1. key ThreadLocal
 				2. value value
-
 		3. 通过map获取 Entty e=  map.getEntry(this);
 		4. 返回e
 		5. 第一次会调用 initialValue	方法 ,创建 TheadlocalMap
@@ -659,7 +658,7 @@
 			2.  类似一个回调
 	3. api
 		1. await   
-
+		2. reset 可以重置 
 
 39. Semaphore	信号
 	1. 指定信号个数,max线程个数
@@ -696,7 +695,35 @@
 			1. getState=
 				1. 如果=0  return false ; 不用释放
 				2. !=0 ,  state-1 ,赋值  然后 return state==0; 
-		 
+	2. CyclicBarrier
+		1. await
+			1. dowait
+				1. 引用全局 lock
+				2. lock.lock();
+				3. 判断 generation里面的值 boolean 是否中断
+					1. 中断 ,抛出异常
+				4. 	-- count 等待数
+				5. 	当等待数=0
+					1. 如果 传递的runnable接口不为空,值 xx.run
+					2. nextGeneration() ,  
+						1. trip.signalAll 全部叫醒
+						2. generation broken 设置成false
+					3. 返回 **return** false
+					4. 如果出现异常
+						1. generation broken 设置成 true	//可以传递
+						2. 	trip.signalAll 全部叫醒
+				6. trip.await //等待
+				7. 如果等待中 中断
+					1. 抛异常
+		2. reset
+			1. 重置 count 
+			2. 叫醒所有当前await线程
+			3. 当rest后还有线程进来就,不能唤醒了!!!
+	3. semaphore
+		1. 竞争职员
+		2. 公平/不公平 FairSync
+
+
 42. future
 	1. FutureTask 
 
