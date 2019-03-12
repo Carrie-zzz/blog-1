@@ -184,10 +184,160 @@
 	6. 错误类
 		1. code , message , canRetry
 	
+6. 自动化测试
+	1. 自动化测试
+		1. 功能测试:模拟 http请求接口
+		2. junit  @RunWith
+				@BeforeClass
+					@Before
+					@Test
+						Assert
+					@After
+				@AfterClass
+	2. 测试
+	
+
+```java
+@RunWith(SpringRunner.class)
+//随机端口
+@SpringBootTest(webEnviroment=SpringBootTest.WebEnviroment.Random_PORT)
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+public class OrderBaseTest {
+	private static RestTemplate = new RestTemplate();
+	@Value("${local.server.port}")
+	int port; // 随机端口
+	@BeforeClass
+	public void initData(){
+		...
+	}		
+	@Test
+	public void testSuccessCreate(){
+		1. 准备数据,设置请求头,请求参数
+		2. 断言 Assert
+			1. notNull(param,message);
+			2. isTrue(boolean param,message);
+	}
+
+}
+```
+7. 执行顺序
+	1. @FixMethodOrder
+		1. MethodSorters.NAME_ASCENDING	字段顺序
+		2. MethodSorters.JVM			JVM返回顺序,每次看你不一样
+		3. MethodSorters.DEFAULT		默认	,hashcode比较
 
 
 
+# 第四章 swagger #
+----------
+1. 介绍
+	1. 前后端分离,接口不好
+	2. 需求变更,接口文档乱
+	
+[swagger文档](http://springfox.github.io/springfox/docs/current/#springfox-swagger-ui)
 
+2. 开发步骤
+	1. 添加依赖
+		1. springfox-swagger2
+		2. springfox-swagger-ui
+	2. 添加配置类
 
+3. 优化
+	1. 选着显示/隐藏接口
+		1. 包匹配
+ 			apis(RequestHandlerSelectors.basePackage(getBasePackage())
+		2. 路径匹配
+			paths(PathSelectors.any())
+			paths(PathSelectors.ant("/order/*"))
+	2. 注释说明
+		1. 类上面说明 @Api(tags = "xx",description="描述")
+		2. 方法上面 	@apiOperation(value,note)
+		3. 字段上面	@ApiModelProperty()
+			1. value
+			2. name
+			3. required
+			4. hidden
+			5. dataType 枚举指向~
+	3. 中文显示(国际化配置)
+		1. 在resource下新建 /META-INFO/resources 下创建swagger-ui.html
+		2. 复制springfox-swagger-ui下面的swagger-ui.html源码
+		3. 引入 
+```
+	 < script src='webjars/springfox-swagger-ui/lang/translator.js' type='text/javascript'></script>
+	 < script src='webjars/springfox-swagger-ui/lang/zh-cn.js' type='text/javascript'></script>
+```
+	4. 分组,多个Docket对象
+		1. groupName("1")  //不写就是默认分组
+	
 
+````       
+ return new Docket(DocumentationType.SWAGGER_2)
+		.groupName("1")
+		.apiInfo(apiInfo())
+        .enable(getEnableSwagger())
+        .securitySchemes(Lists.newArrayList(apiKey()))
+        .securityContexts(newArrayList(securityContext()))
+		.select()
+		// 选着包
+        .apis(RequestHandlerSelectors.basePackage(getBasePackage()))
+		// 匹配路径
+        .paths(PathSelectors.any()).build().globalOperationParameters(pars);
+```
 
+4. swagger 模块
+	1. 使用配置文件配置
+		1.  @Import(MySwaggerConfiguration.class)  
+	2. 组合注解
+		1. 注解上有多个注解,
+		2. 起到多个功能效果,起到简化作用
+		3. @EnableSwagger
+	3. @Enable*原理  自动配置
+		* 在resources下新建 **spring.factorie**
+		* EnableAutoConfiguration=com.xx.AaaConfiguraio
+	4. 属性配置 			
+		* @ConfigurationProperties(prefix="")
+	* 配置参数  xxConfigurationProperties(prefix="")
+		Docket ApiInfo
+			* groupName
+			* basePackage
+			* antPath
+			* title
+			* description
+			* licence
+			* 
+	* 在别的模块直接导入
+		* SpringBootApplication
+		* @Import(xx.class)  
+
+		* @Import 改成注解配置
+			* 自己写一个注解@EnableSwagger
+			* 然后@Import
+			* 别人用的时候,就使用该@EnableSwagger注解就好了
+		
+	* 别的模块,覆盖配置 prefix	
+
+5. 工具
+	1. swagger ui
+		1. 给定url,显示swagger不同api文档
+	2. swagger editor
+		1. 编写接口,让别人实现
+		2. 不同语言,生成mock接口(客户端,服务端)代码
+	3. swagger codegen
+		1. swagger editor生成代码一样
+		
+
+# 第五章  销售端#
+----------
+1. 介绍
+	**功能**
+		1. 查询
+		2. 申购,赎回
+		3. 对账
+	**json rpc**
+		1. 系统内部调用
+		2. 不用http
+		3. 比webservice xml 节省宽带
+
+2. json rpc
+	1. jsonrpc4j
+		1. https://github.com/briandilley/jsonrpc4j

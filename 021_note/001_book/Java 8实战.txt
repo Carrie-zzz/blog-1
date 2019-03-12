@@ -1,0 +1,901 @@
+-----------------------------------------第一章
+Stream<T>流api
+	并行操作
+	外部迭代 :  for-each 循环一个个去迭代元素
+	内部迭代 :  循环完全是在Stream API库内部进行的
+	
+	分组(分cpu) -> 过滤 -> 合并
+		stream()	 顺序
+		parallelStream() 并行
+	Collection主要是为了存储和访问数据
+	Stream则主要用于描述对数据的计算
+		
+
+
+行为(方法)参数化,把代码传递给方法
+	方法引用(把方法作为值) ::
+		File[] hiddenFiles = new File(".").listFiles(File::isHidden);
+	Lambda——匿名函数
+		filterApples(inventory, (Apple a) -> a.getWeight() > 150 );
+	函数式编程范式的基石
+		没有共享的可变数据(不能有共享的可变数据)
+		将方法和函数即代码传递给其他方法的能力
+	一等值(公民)
+		
+	二等值(公民)
+		程序执行期间不能传递,如方法和类等
+		Java 8的设计者决定允许方法作为值，让编程更轻松(方法引用)
+	
+	
+
+并行与共享的可变数据
+	“纯函数”或“无副作用函数”或“无状态函数”
+		不能访问共享的可变数据
+
+		
+接口中的默认方法
+	接口如今可以包含实现类没有提供实现的方法签名了
+	缺失的方法主体随接口提供了（因此就有了默认实现）,而不是由实现类提供
+	default
+
+	菱形继承问题
+
+模式匹配(正则)
+
+-----------------------------------------第二章.通过行为参数化传递代码
+谓词
+	一个返回 boolean 值的函数
+行为参数化
+	让方法接受多种行为（或战略）作为参数，并在内部使用，来完成不同的行为
+传统:内联“传递代码”,必须传递对象(把代码包裹在对象里)
+
+把迭代要筛选的集合的逻辑(过滤)与对集合中每个元素应用的行为(接口实现)区分开来
+    策略设计模式
+	接口(定义谓词)
+	实现类
+	过滤方法(可以重用)
+		接受集合和实现类(匿名内部类)
+
+谓词
+	inventory.sort((Apple a1, Apple a2) -> a1.getWeight().compareTo(a2.getWeight()));
+代码不会返回任何结果（即 void ）
+	Thread t = new Thread(() -> System.out.println("Hello world"));
+
+
+
+
+
+行为参数化，就是一个方法接受多个不同的行为作为参数，并在内部使用它们，完成不同行为的能力
+
+
+
+-----------------------------------------第三章.lambda函数
+1. Lambda函数不像方法那样属于某个特定的类,
+	但和方法一样，Lambda有参数列表,函数主体,返回类型，还可能有可以抛出的异常列表
+2. 语法
+	(parameters) -> expression表达式  或者  statements1语句
+	(parameters...) -> {statements1语句; statements2; return expression}
+
+	* 可以没有参数,但是()一定要有
+	* 如果函数体只有一行,且作为返回值,可以直接使用表达式 可以省略{} 和return;
+		* 一个表达式
+			()->(1*2);
+			()->new ArrayList(12);
+		* 一个语句(没有返回值)
+			()-> System.out.println(1);
+	* return必须放在{}中
+	* 如果有多行语句,必须写在{}里面
+	* 表达式要么不写{}直接返回,,,要么在{ return 表达式};
+	* 参数类型可以省略,可以自己类型推断出来
+           (Apple a) -> "green".equals(a.getColor()) //有时候显式写出类型更易读
+	    a -> "green".equals(a.getColor())	//类型推断
+	   (Apple a1, Apple a2) -> a1.getWeight().compareTo(a2.getWeight()	
+	   ( a1,  a2) -> a1.getWeight().compareTo(a2.getWeight() //类型推断	
+3. 使用场景
+	* 函数式接口:  @FunctionalInterface
+		* public interface Comparator<T>
+			int compare(T o1, T o2);
+		* public interface Runnable
+			void run();
+		* public interface Callable<V>
+			V call();
+
+		* 只定义一个抽象方法的接口,必须定义一个抽象方法的接口
+		* 可以有多个默认方法
+		* 哪怕有很多默认方法,只要接口只定义了一个抽象方法抽象方法,它就仍然是一个函数式接口
+		
+		* Lambda表达式允许你直接以内联的形式为函数式接口的抽象方法提供实现
+			并把整个表达式作为函数式接口的实例（具体说来，是函数式接口一个具体实现的实例）
+			Runnable r1 = () -> System.out.println("Hello World 1");
+		* 任何函数式接口都不允许抛出受检异常（checked exception）
+			* 非 RuntimeException
+	* 函数描述符(方法签名)
+		* 一个Lambda表达式的签名要和函数式接口的抽象方法一样
+			入参 , 返回值
+			* 抽象方法的签名(函数描述符)
+			* Lambda表达式的签名
+		() -> void
+		(Apple,Apple) -> int 	
+
+
+	* 环绕场景(execute around)
+		* 打开资源  操作  关闭资源
+
+		
+	* 常用函数式接口(java.util.function)
+		* java.util.function
+			* Predicate<T>
+			* IntPredicate<T>
+				boolean test(T t);
+		* java.util.function
+			* Consumer<T>
+				void accept(T t);
+		* java.util.function
+			* Function<T,R>
+			* IntToDoubleFunction
+				R apply(T t);
+	* 装箱后的值需要更多的内存，并需要额外的内存搜索来获取被包裹的原始值。
+
+	* 类型检查,类型推断以及限制
+		Lambda的类型是从使用Lambda的上下文推断出来的
+			
+		Lambda表达式需要的类型称为目标类型(参数类型或者接受类型)
+			
+		如果一个Lambda的主体是一个语句表达式， 它就和一个返回 void 的函数描述符兼容
+			boolean a = list.add(s);
+			Predicate<String> p = s -> list.add(s);  //匹配
+			Runnable r = ()-> list.add(s);		// 兼容
+
+	* 自由变量
+		Lambda捕获x变量(在其主体中引用)	
+			实例变量
+			静态变量
+			局部变量必须显式声明为 final  或事实上是 final(局部变量仅仅赋值一次)
+		实例变量都存储在堆中，而局部变量则保存在栈上
+	* 方法引用
+		Lambda表达式简化
+		* 格式	
+			类名::方法名	
+				Apple::getWeight	引用了 Apple 类中定义的方法 getWeight
+			最后面不要有() 不是调用方法
+		eg:
+			String::substring
+			Thread.currentThread()::dumpStack
+			System.out::println
+		* 类型
+			* 静态方法的应用,				第一个参数作为,方法参数
+				 Integer::parseInt 
+			* 指向任意类型实例方法的方法引用(对象方法),	第一个参数作为 对象(s)调用后面的方法
+				String::length
+			*  指向现有对象的实例方法的方法引用(实例方法),	第一个参数作为 方法参数,提供给对象的实例(s)调用
+				s::length
+				
+			<调用者,参数,返回值>
+			
+		* 构造函数引用	(类似以上:静态方法)
+			ClassName::new 会根据接口推断入参.出参(返回值)必定是这个对象了
+			*  函数描述 ()->T  入参无
+				Supplier<Apple> c1 = Apple::new;
+				Apple a1 = c1.get();
+			*  函数描述 (E)->T 入参一个
+				Function<Integer, Apple> c2 = Apple::new;
+				Apple a2 = c2.apply(110);
+			*  函数描述 (E,C)->T
+				BiFunction<String, Integer, Apple> c3 = Apple::new;
+				Apple c3 = c3.apply("green", 110);	
+	* 复合
+		* 比较器复合
+			Comparator类中 comparing reversed thenComparing
+			* 比较 comparing 默认方法
+				Comparator<Apple> c = Comparator.comparing(Apple::getWeight);
+			* 逆序 reversed  默认方法
+				list.sort(comparing(Apple::getWeight).reversed());
+			* 第二次比较 thenComparing(第一次相同情况下) 默认方法
+				list.sort( comparing(Apple::getWeight).thenComparing(Apple::getCountry) );
+		* 谓词复合
+			 negate非 and与 or或
+				list.and(a->a.getWeight>150).or(a->"green".equals(a.getColor))
+					(a && b) ||  c
+				list.or(a->"green".equals(a.getColor)).and(a->a.getWeight>150)
+					(list || b) &&  c
+		* 函数复合
+			FunctionL类型 (T)->E
+			 andThen 和 compose
+			* andThen 默认方法
+				输入应用一个给定函数，再对输出应用另一个函数
+				f.andThen(g)  先执行f,然后执行g
+			* compose 默认方法 
+				f.compose(g) 先执行g,然后执行f 
+
+Part2 函数式数据处理 stream api (4-7章)
+-----------------------------------------第四章.引入流
+* 流
+	新API,它允许你以声明性(说明想要完成什么,而不是去实现)方式处理数据集合,支持简单并行处理
+	筛选,切片,查找,匹配,映射和归约
+
+	List<String> lowCaloricDishesName =
+		menu.parallelStream()   menu.stream()  
+		.filter(d -> d.getCalories() < 400)
+		.sorted(comparing(Dishes::getCalories))
+		.map(Dish::getName)
+		.collect(toList());
+	Map<Dish.Type, List<Dish>> dishesByType =
+		menu.stream().collect(groupingBy(Dish::getType));
+
+	* 特点
+		声明性——更简洁，更易读
+		可复合——更灵活
+		可并行——性能更好
+
+
+	数字流
+	偶数流
+	勾股数流
+	质数流(2, 3, 5, 7, 11, …)
+* 定义
+	* 源 list
+	* 元素序列 item1,item2...
+	* 操作
+		 filter,map(提取),limit(截断流),reduce,find,match,sort,collect
+	* 流水线: 多流操作本身会返回一个流,链式操作
+		返回另外一个流:
+			filter,map,reduce,find,match,sort,limit
+		不返回
+			collect(返回集合)
+		延迟和短路
+	* 内部迭代
+
+* 集合和流
+	* 集合
+		* 遍历多次
+		* 外部迭代
+		* 空间
+	* 流		
+		* 遍历一次
+		* 内部迭代
+		* 时间
+		* 元素是按需计算	
+* 操作
+	* 分类
+		* 中间操作
+			流水线操作
+			filter,map和limit
+		* 终端操作
+			启动执行操作和关闭流水线操作
+			collect
+	* 中间操作
+		* 中间操作会返回另一个流
+		* 除非流水线上触发一个终端操作，否则中间操作不会执行任何处理
+
+		* 短路:满足就终止
+			limit
+		* 循环合并
+			filter和map是两个独立的操作,但它们合并到同一次遍历中
+		
+		filter	T->boolean	谓词
+		map	T->R
+		limit
+		sorted	(T,T)->int
+		distinct
+	* 终端操作
+		
+		* 从流的流水线生成结果,返回任何不是流的值,包括void
+		* collect,forEach,count
+
+		forEach	void
+		count	long
+		collect 集合:List,Map,Integer
+
+
+	* 流程
+		* 准备一个数据源
+		* 一个中间操作,形成流水线
+		* 一个终端操作,执行流水线和生成结果
+		类似(构建器模式模式)
+
+
+
+
+-----------------------------------------第五章.使用流
+* 过滤筛选,切片,匹配,查找,归约和映射
+* 数值流,文件流,数组流,无限流
+
+* 筛选和切片
+	* 谓词筛选
+		* filter接受一个谓词(一个返回boolean 的函数)作为参数,并返回一个包括所有符合谓词的元素的流
+		* (T)->boolean
+	* 唯一筛选
+		* distinct,根据流所生成元素的hashCode和equals方法实现
+			
+	* 截断筛选
+		* limit(n),返回一个不超过给定长度的流
+		* 筛选n个立即返回结果
+	
+	* 跳过筛选
+		* skip(n),返回一个前面流里扔掉了前n个元素的流,不足n返回一个空流
+* 映射
+	* 概念
+		* 从对象中选择某些信息,可以选择一列信息
+		* 遍历每一个元素,映射成一个新元素
+		* 使用映射一词,是因为它和转换类似,但其中的细微差别在于它是“创建一个新版本”而不是去“修改”
+
+	* map
+		* 接收一个函数
+		* map(Dish::getName)
+			T->Stream<String>
+		* map(String::length)
+		* 结合
+			.map(Dish::getName)
+			.map(String::length)
+	* 流的扁平化(flatMap)
+		* ["Hello","World"],你想要返回列表 ["H","e","l", "o","W","r","d"]
+			* 错误1,返回两个元素的 List<String[]>
+				List<String[]> =words.stream()		Stream<String>	
+					.map(word -> word.split(""))	Stream<String[]>
+					.distinct()
+					.collect(toList());
+			* 错误2,返回		List<Stream<String>>
+				* 需要一个字符流而不是数组["Hello","World"].stream
+				Stream<String> streamOfwords = Arrays.stream(arrayOfWords);
+
+				List<Stream<String>> = words.stream()	
+					.map(word -> word.split(""))	Stream<String[]>
+					.map(Arrays::stream)		Stream<Stream<String>> h e l l o....
+					.distinct()			
+					.collect(toList());		List<Stream<String>>
+		
+			* 正确:flatMap
+				* flatMap 各个数组并不是分别映射成一个流，而是映射成流的内容
+				List<String> uniqueCharacters =
+					words.stream()
+					.map(w -> w.split(""))		Stream<String[]>
+					.flatMap(Arrays::stream)	Stream<Stream<String>>->Stream<String>
+					.distinct()
+					.collect(Collectors.toList());	
+				* flatMap 方法让你把一个流中的每个值都换成另一个流，然后把所有的流连接起来成为一个流
+
+* 查找和匹配
+	allMatch,anyMatch,noneMatch,findFirst 和 findAny
+	
+	* anyMatch:匹配至少一个
+		* 接收一个谓词
+		* 终端操作 , 返回一个boolean
+	* allMatch:所有匹配
+		* 接收一个谓词
+		* 终端操作 , 返回一个boolean
+			必须全部匹配
+			boolean isHealthy = menu.stream().noneMatch(d -> d.getCalories() >= 1000);
+	* noneMatch: 没有任何元素与给定的谓词匹配
+		
+	anyMatch,allMatch和noneMatch 这三个操作都用到了我们所谓的短路
+	这就是大家熟悉的Java中 && 和 || 运算符短路在流中的版本
+		有些操作不需要处理整个流就能得到结果
+		limit 也是一个短路操作
+		无限流中用处很大
+
+	* findFirst : 找到第一个符合条件元素
+	* findany : 找到第一个符合条件元素
+		如果你不关心返回的元素是哪个，请使用 findAny ，因为它在使用并行流时限制较少。
+
+
+* 归约
+	* 终端操作:返回类型
+		* boolean	allMatch
+		* void		foreach
+		* 对象		findAny
+		* 集合		collect
+	* 归约终端操作 reduce : 流中元素反复组合(结合)起来,成一个值 折叠fold (求和sum,max,min,count)
+		* reduce参数
+			* 初始值
+			* 组合操作  BinaryOperator<T>
+		* reduce求和,状态累计
+			* numbers.stream().reduce(0, (a, b) -> a + b);
+				* 0作为第一个参数a,和流中第一个值作为第二个参数b,
+				* 相加,得到累计值
+				* 累计值作为第一个参数,和下一个值相加
+				* ....
+			* 函数引用
+				numbers.stream().reduce(0, Integer::sum)
+		* reduce重载
+			* 组合操作  BinaryOperator<T>
+				* 不传递出初始值
+			* Optional<Integer> sum = numbers.stream().reduce((a, b) -> (a + b));
+				* 考虑流中没有任何元素,无法返回其和(没有初始值)
+				* 结果被包裹在一个Optional对象里
+				* null->int 会运行错误!!!
+
+		* 最大值和最小值
+			numbers.stream().reduce(0, (a, b) -> a>b?a:b );
+			Optional<Integer> max = numbers.stream().reduce(Integer::max);
+
+			numbers.stream().reduce(Integer::min)
+	*  map-reduce 模式
+		* Google用它来进行网络搜索而出名
+		* 它很容易并行化  
+		* 求和共享sum,不容易并行 (可变的累加器模式sum对于并行化来说是死路一条)
+			* 分块求和,最后再合并起来(分支/合并框架)
+		*  stream() 换成了 parallelStream()
+			* 不能更改状态(如实例变量)
+			* 必须满足结合律才可以按任意顺序执行
+	* 状态
+		* 无状态
+			*  filter 和 map
+		* 有状态
+			*  reduce,sum,max  求和 , 累计中间值
+				* 需要内部状态来累积结果
+				* 内部状态都是有限的
+
+			*  sort或distinct
+				* 排序要求所有元素都放入缓冲区后才能给输出流加入一个项目
+					* 这一操作的存储要求是无界的
+					* 可能会有问题(无限,不存在)
+				* 
+
+
+filter  中间			Stream<T>	Predicate<T>		T->boolean
+distinct中间(有状态 无界)	Stream<T>
+skip	中间(有状态 有界)	Stream<T>long
+limit	中间(有状态 有界)	Stream<T>long
+map	中间			Stream<R>	Function<T,R>T->R
+flatMap	中间			Stream<R>	Function<T,Stream<R>>	T->Stream<R>
+sorted  中间(有状态 无界)	Stream<T>	Comparator<T>		(T, T)->int
+anyMatch终端			boolean		Predicate<T>		T->boolean
+noneMatch终端			boolean		Predicate<T>		T->boolean
+allMatch终端			boolean		Predicate<T>		T->boolean
+findAny	终端			Optional<T>
+findFirst终端			Optional<T>
+forEach	终端			void		Consumer<T>		T -> void
+collect	终端			R		Collector<T, A, R> 
+	collect(toList())
+	collect(toSet())
+	collect(joinig())	StringBuilder
+reduce	终端(有状态有界)	Optional<T>BinaryOperator<T>		(T,T)-> T
+
+
+
+
+
+* 数值流(特化流)
+	* 原始类型流特化  
+		* 避免装箱造成的复杂性
+			* 避免暗含的装箱成本  int->Integer
+		* 接口
+			* IntStream
+			* DoubleStream
+			* LongStream
+		* 都新增常用数值归约的新方法
+			* sum
+			* max
+			* min
+			* average
+	* 对象流Stream<T>	->	数值流 IntStream
+		* mapToInt
+		* mapToDouble
+		* mapToLong
+		如果流是空的， sum 默认返回 0 
+		order.stream()
+			.mapToInt( Dish :getNum )   // 返回IntStream
+			.sum();
+
+	* 数值流 IntStream	->	对象流Stream<T>
+
+		IntStream intStream = order.stream().mapToInt(Dish :getNum);
+		Stream<Integer> stream = intStream.boxed(); 
+			* 每个 int 都会装箱成一个Integer
+
+	* 区间(数值范围)
+		* IntStream 和 LongStream 的静态方法
+			* range		[start,end)
+			* rangeClosed	[start,end] 包含结束值
+				* 第一个参数开始值
+				* 第二个参数结束值
+		* 偶数流
+			* [1,100]偶数流
+			
+				IntStream evenNumbers = IntStream.rangeClosed(1, 100).filter(n -> n % 2 == 0);
+				evenNumbers.count();  //50  开始filter和计算count
+				
+	* 勾股数流
+		* 直角三角形边长 : a*a+b*b=c*c   三个正整数
+		* 取余,取模  a%b = a - (int)(a/b)*b
+			 (expr % 1) ==0  整数
+
+		* 方案
+			map会为流中的每个元素返回一个int数组.所有用mapToObj(好像没什么区别...)
+			flatMap(流扁平化),  Stream<Stream<int[]>>  转换成  Stream<int[]>
+
+		Stream<int[]> map =IntStream
+				.rangeClosed(1, 100)				//IntStream
+				.filter(b -> Math.sqrt(a*a + b*b) % 1 == 0)	//IntStream
+				.boxed()					//Stream<Integer>
+				.map(b -> new int[]{a, b, (int) Math.sqrt(a * a + b * b)});
+
+		Stream<int[]> pythagoreanTriples =IntStream
+				.rangeClosed(1, 100)
+				.boxed()		// Stream<Integer>
+				.flatMap(
+					a ->IntStream.rangeClosed(a, 100)  //避免重复(3,4,5)和(4,3,5) 
+					.filter(b -> Math.sqrt(a*a + b*b) % 1 == 0)   //整数
+					.mapToObj(b ->new int[]{a, b, (int)Math.sqrt(a * a + b * b)})   //Stream<int[]>
+					);
+		
+		//解决 求两次平方根
+		Stream<double[]> pythagoreanTriples2 =IntStream
+				.rangeClosed(1, 100)
+				.boxed()
+				.flatMap(
+					a ->IntStream.rangeClosed(a, 100)
+						.mapToObj(b -> new double[]{a, b, Math.sqrt(a*a + b*b)})
+						.filter(t -> t[2] % 1 == 0)
+					);
+
+
+		 result.limit(5).forEach(t -> System.out.println(Arrays.toString(t)));	
+* 构建流
+	值序列,数组,文件来创建流
+
+	* 值创建流
+		* 值创建流
+			* 静态方法  Stream.of
+				Stream<String> stream = Stream.of("Java 8 ", "Lambdas ", "In ", "Action");
+				stream.map(String::toUpperCase).forEach(System.out::println);
+
+				Stream<String> emptyStream = Stream.empty();	//空流
+		* 数组创建流
+			* 静态方法	 Arrays.stream	
+
+				        IntStream stream = Arrays.stream(new int[] {1});
+					Stream<String> stream2 = Arrays.stream(new String[] {"'"})
+
+				int sum = Arrays.stream(new int[]{1,2,3}).sum();
+			
+		* 文件创建流
+			* NIO API  java.nio.file.Files 中很多静态方法都会返回一个流
+				* Files.lines
+					Stream<String> lines =Files.lines(Paths.get("data.txt"), Charset.defaultCharset())
+
+					lines.flatMap(line -> Arrays.stream(line.split(" ")))
+					.distinct()	
+					.count();
+
+		* 由函数生成流: 创建 无限流
+			* 流和集合之间的一个关键区别
+				* 值是按需计算的,可以永远计算下去,无界
+
+			* 静态方法	 Stream.iterate 和 Stream.generate	
+				* 用给定的函数按需创建值,因此可以无穷无尽地计算下去!
+				* 一般配合 limit,来对这种流加以限制
+				* 一般不对无限流做排序或归约
+			* iterate
+				// 正偶数的流 0,2,4
+				Stream.iterate(0, n -> n + 2)
+				.limit(10)
+				.forEach(System.out::println);  
+							
+			* 斐波纳契元组序列
+				* 前两个数字之和 等于 后面一个数字
+					0,1,1,2,3...
+					(0,1),(1,1),(1,2),(2,3),
+				
+				Stream.iterate(new int[]{0, 1},
+					t -> new int[]{t[1], t[0]+t[1]})
+					.limit(20)
+					.forEach(t -> System.out.println("(" + t[0] + "," + t[1] +")"));
+
+				Stream.iterate(new int[]{0, 1},
+					t -> new int[]{t[1],t[0] + t[1]})
+					.limit(10)
+					.map(t -> t[0])
+					.forEach(System.out::println)
+			* generate
+				Supplier<T> IntSupplier<T>
+				Stream<Double> generate = Stream.generate(Math::random)
+				IntStream ones = IntStream.generate(() -> 1); //避免装箱操作
+
+				Stream.generate(Math::random)  //供应源,尽量无状态
+					.limit(5)
+					.forEach(System.out::println);
+
+-----------------------------------------第六章.用流收集数据
+
+* 收集器(转换函数)
+	* collect(Collector)	 高级归约操作 终端操作
+		* Collector 下提供多个静态工厂方法	
+			* toList()		List	
+				collect(Collectors.toList())
+				collect(toList())
+			* groupingBy(()->T)	Map
+
+	* Collector 会对元素应用一个转换函数,结果累积在一个数据结构,最后输出
+
+	* 预定义收集器
+		* 归约和汇总成一个值
+		* 元素分组
+		* 元素分区(分组后进一步归约)		谓词作为分组函数
+
+* 归约汇总
+	* 求和		Collectors.counting() 
+		menu.stream().collect(Collectors.counting());
+		menu.stream().count();
+		
+		假定导入 import static java.util.stream.Collectors.*;
+		menu.stream().collect(counting());
+
+	* 最大,最小值	 Collectors.maxBy  Collectors.minBy
+		* 两个收集器接收一个 Comparator 参数
+			Optional<Dish> mostCalorieDish =
+			menu.stream()
+			.collect(maxBy(Comparator.comparingInt(Dish::getCalories)));	
+		* 返回Optional<T>
+			* 兼容 参数(menu)空的时候,返回
+
+	* 求和		 Collectors.summingInt summingLong  summingDouble
+		* 先映射,然后相加
+		int r = menu.stream().collect(summingInt(Dish::getCalories));
+	
+	*平均		 Collectors.averagingInt averagingLong averagingDouble
+		int r = menu.stream().collect(averagingInt(Dish::getCalories));
+		
+	* 全部		summarizingInt	summarizingLong	summarizingDouble
+		IntSummaryStatistics r =menu.stream().collect(summarizingInt(Dish::getCalories));
+			count=9, sum=4300, min=120,average=477.777778, max=800
+
+	* 连接字符串	joining
+		* 对象toString,然后拼接
+		* 内部使用StringBuilder
+		* 重载
+			* joining()
+			* joining(",")	指定分隔符
+		String r = menu.stream().map(Dish::getName).collect(joining());
+
+	* 广义的归约汇总	reducing(n1,n2,n3)	reducing(n3) 
+		* n1:起始值,没有元素的返回值(可以没有,第一个项目作为起点)
+		* 转换函数,映射(可以没有,恒等函数作为一个转换函数)
+		* BinaryOperator<T,T,T> 归约  :  两个入参和返回值 类型一致!
+
+			int total = 
+			menu.stream().collect(reducing(
+			0, Dish::getCalories, (i, j) -> i + j));
+
+			Optional<Dish> max =
+			menu.stream().collect(reducing(
+			(d1, d2) -> d1.getCalories() > d2.getCalories() ? d1 : d2));
+
+		* collect特别适合表达可变容器上的归约,适合并行
+			int totalCalories = menu.stream().collect(reducing(0,
+				Dish::getCalories,
+				Integer::sum));
+
+		* 转换函数->初始值 -> 累计函数-迭代合并>
+
+* 分组
+	* groupingBy(分组/分类函数Function  , 收集器   )
+		* 参数 
+			* Function : T->E
+			* 收集器,可以省略,默认toList()
+		* 结果 Map<分组函数返回值,流中元素>
+			menu.stream().collect(groupingBy(Dish::getType)); 
+				* 函数引用,第一个参数item,返回值getType()
+			menu.stream().collect(
+				groupingBy(dish ->  dish.getNum>3 ? 1:2	));
+	* 多级分组
+		* groupingBy(一级分组函数,groupingBy(二级分组函数))
+		* 返回	两级 Map	Map<E,Map<G,List<T>> >	
+		* 可以扩展任意层
+
+	* 按子组收集数据
+		* 外层groupingBy(第一个),第二个参数不一定是groupingBy,可以是任何类型的收集器
+		* groupingBy(分组函数,收集函数)
+			Map<Dish.Type, Long> typesCount = menu.stream().collect(
+					groupingBy(Dish::getType, counting()));
+		*  groupingBy(f)  等价于  groupingBy(f,toList())
+			Map<Dish.Type, Optional<Dish>> mostCaloricByType =
+					menu.stream()
+					.collect(groupingBy(Dish::getType,
+					maxBy(comparingInt(Dish::getCalories))));
+			* Optional这里不可能空,应为map只有存在时候才put进去值
+				* 如果不存在key , Optional根本不会put进map
+
+			* 去掉Optional
+				* Collectors.collectingAndThen 工厂方法,转成另外一个收集器
+					* 参数
+						* 收集器
+						* 转换番薯
+					* 返回值
+						* 另外一个收集器
+				Map<Dish.Type, Dish> mostCaloricByType =
+					menu.stream().collect(groupingBy
+					(Dish::getType,
+					collectingAndThen(
+						maxBy(comparingInt(Dish::getCalories)) //收集器
+						,Optional::get)				//转换函数
+					));
+				
+			
+			* mapping
+				* 收集之前对每个输入元素应用一个映射函数
+				* 参数
+					* 一个函数对流中的元素做变换
+					* 变换的结果对象收集起来
+				* 返回值
+					* 另外一个收集器
+				Map<Dish.Type, Set<CaloricLevel>> caloricLevelsByType =
+					menu.stream().collect(
+						groupingBy(Dish::getType, mapping(dish ->  dish.getNum>0?1:2,toSet() )
+					));
+
+				* 指定返回值
+					toCollection(HashSet::new))
+
+				Map<Dish.Type, Set<CaloricLevel>> caloricLevelsByType =
+					menu.stream().collect(
+						groupingBy(Dish::getType, mapping(dish ->  dish.getNum>0?1:2, toCollection(HashSet::new) )
+					));
+
+
+* 分区
+	* 介绍partitioningBy
+		* 如果分组/分类函数是一个谓词(返回boolean的函数),它称分区函数  分区谓词
+		* 分区函数返回bool值,返回Map的key是Map<Boolean>
+		* 最多两组 true false
+			Map<Boolean, List<Dish>> partitionedMenu =
+				menu.stream().collect(
+					partitioningBy  (
+							Dish::isVegetarian  //分区函数
+							)
+					      );
+			menu.stream().filter(Dish::isVegetarian).collect(toList());
+
+		* 参数partitioningBy
+			* 分区函数(返回boolean)
+			* 收集函数可以没有
+
+	* 优势
+		* 保留两套返回(filter,只能保留一套,进行两次筛选)
+		* 分区后分组  
+			* 继续收集,二级map
+			Map<Boolean, Map<Dish.Type, List<Dish>>> b =
+			menu.stream().collect(
+				partitioningBy(Dish::isVegetarian,
+				groupingBy(Dish::getType)
+			));
+			 :	
+				{false={FISH=[prawns, salmon], MEAT=[pork, beef, chicken]}, true={OTHER=[french fries, rice, season fruit, pizza]}}
+
+		*分区后收集 :
+			Map<Boolean, Dish> a = menu.stream().collect(
+				partitioningBy(Dish::isVegetarian,
+				collectingAndThen(
+				maxBy(comparingInt(Dish::getCalories)),
+				Optional::get)));
+
+			Map<Boolean, Long> a = menu.stream().collect(partitioningBy(Dish::isVegetarian,
+						counting()));
+
+		* 多级分区
+			Map<Boolean, Map<Boolean, Dish> > 
+			menu.stream().collect(partitioningBy(Dish::isVegetarian,
+				partitioningBy (d -> d.getCalories() > 500)));
+
+	* 质数和非质数分区
+		public Map<Boolean, List<Integer>> partitionPrimes(int n) {
+			return IntStream.rangeClosed(2, n).boxed()
+			.collect(
+			partitioningBy(candidate -> isPrime(candidate)));
+		}
+
+
+* 收集器接口 
+	* Collector 接口
+		Supplier<A> supplier();			get		
+		BiConsumer<A, T> accumulator();		accept		累加器
+		Function<A, R> finisher();		apply		完成器
+		BinaryOperator<A> combiner();
+
+		Set<Characteristics> characteristics();  //特征,提示列表
+
+		T 是流中要收集的项目的泛型。
+			item
+		A 是累加器的类型，累加器是在收集过程中用于累积部分结果的对象。
+			
+		R 是收集操作得到的对象（通常但并不一定是集合）的类型。
+			result
+	* Collectors工具类
+		* 提供很多 工厂方法
+
+
+	* 抽象方法
+		* supplier  : 建立新的结果容器
+			* 在调用时它会创建一个空的累加器实例,供数据收集过程使用
+			* 返回本身的无参函数
+
+			public Supplier<List<T>> supplier() {
+				return ArrayList::new;
+			}
+		* accumulator : 将元素添加到结果容器
+			* 参数
+				* 保存归约结果的累加器	
+				* 第n个元素本身
+			* 返回 void,不断更新第一个参数(原位更新累计器)
+			* 
+			public BiConsumer<List<T>, T> accumulator() {
+				//return (list, item) -> list.add(item);
+				return List::add;
+			}
+		* finisher    : 对结果容器应用最终转换
+			* 累积过程的最后要调用的一个函数
+			* 将累加器对象  转成  最终返回结果
+			* 一般累计器结果和最终返回结果 一样,无需转化,直接返回一个identity函数
+			public Function<List<T>, List<T>> finisher() {
+				return Function.identity();
+			}
+
+		* 三个方法
+			* 以上三个已经可以满足基本的顺序归约操作了
+			* 不支持
+				* 流延迟性质: 还需要进行中间操作(流水线)
+				* 并行,归约
+
+		* combiner : 合并两个结果容器
+			* 返回
+				*  一个供归约操作使用的函数
+				* 规定了并行操作时,各个子部分归约所得的累加器(块数据)要如何合并
+			public BinaryOperator<List<T>> combiner() {
+				return (list1, list2) -> {
+				list1.addAll(list2);
+				return list1; }
+			}
+
+		* 四个方法
+			* 可以对流进行并行 归约了
+			* 用到Java 7中引入的分支/合并框架 和 Spliterator 抽象
+				* 原始流会以递归方式拆分为子流(块),直到块不能拆分
+					* 分布式工作单位太小,并行计算往往比顺序计算要慢
+					* 并行任务比处理器内核数多很多的话就毫无意义了
+				* 子流(块)并行操作,正常流程
+				* 最后合并,使用收集器 combiner 方法返回的函数,将所有的部分结果两两合并
+			
+		* characteristics
+			* 返回 一个不可变的 Characteristics 集合
+				* 收集器的行为集合
+					* 流是否可用并行归约
+					* 哪些优化提示
+			* 三个项目的枚举
+				* UNORDERED	归约结果不受流中项目的遍历 和 累积顺序的影响
+				* CONCURRENT	
+					* accumulator 函数可以从多个线程同时调用
+					* 可用并行归约
+					* 如果没有(无序数据源时才可以并行归约)
+				* IDENTITY_FINISH
+					* 这表明完成器方法返回的函数是一个恒等函数,跳过完成器
+					* 累加器对象将会直接用作归约过程的最终结果
+					* 将累加器 A 不加检查地转换为结果 R 是安全的
+
+	* toList 案例
+		public class ToListCollector<T> implements Collector<T, List<T>, List<T>> {
+			public Supplier<List<T>> supplier() {
+				return ArrayList::new;
+			}
+
+			public BiConsumer<List<T>, T> accumulator() {
+				return List::add;
+			}
+			public Function<List<T>, List<T>> finisher() {
+				return Function.indentity();
+			}
+			public BinaryOperator<List<T>> combiner() {
+				return (list1, list2) -> {
+				list1.addAll(list2);
+				return list1;
+				};
+			}
+			public Set<Characteristics> characteristics() {
+				return Collections.unmodifiableSet(EnumSet.of(
+				IDENTITY_FINISH, CONCURRENT));
+			}
+		}
+
+
+156-135
+
+
