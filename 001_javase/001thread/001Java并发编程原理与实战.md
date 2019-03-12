@@ -704,30 +704,164 @@
 					1. 中断 ,抛出异常
 				4. 	-- count 等待数
 				5. 	当等待数=0
-					1. 如果 传递的runnable接口不为空,值 xx.run
-					2. nextGeneration() ,  
+					1. 如果 传递的runnable接口不为空,就 xx.run
+					2. nextGeneration() ,  重置
 						1. trip.signalAll 全部叫醒
 						2. generation broken 设置成false
+						3. count = parties;
 					3. 返回 **return** false
-					4. 如果出现异常
+					4. 如果出现异常 breakBarrier   Interrupt
 						1. generation broken 设置成 true	//可以传递
-						2. 	trip.signalAll 全部叫醒
+							1. 如果一个线程true了,后面线程state!=0的就会中断
+							2. 唤醒前面await的线程
+							3. 如果还有线程进来,broken true 也会异常抛出
+
+						3. trip.signalAll() 全部叫醒
+						2. count = parties;
 				6. trip.await //等待
 				7. 如果等待中 中断
-					1. 抛异常
+					1. breakBarrier
+					2. 抛异常  
+						
 		2. reset
 			1. 重置 count 
 			2. 叫醒所有当前await线程
 			3. 当rest后还有线程进来就,不能唤醒了!!!
+			4. 如果还有线程进来,count--值不能达到0,可能永久不被唤醒
 	3. semaphore
-		1. 竞争职员
+		1. permits  竞争资源
 		2. 公平/不公平 FairSync
+		3. 同事n个线程 , 共享锁
 
 
-42. future
-	1. FutureTask 
+42. future 提前完成任务
+	1. FutureTask<T><Callable>  implements RunnableFuture<T>
+		1. get();  //获取结果
+	2. Callable<T>
+		1. call  :  ()->T
+	3. Thread(FutureTask).start()
+	4. task.get(); 
 
-	2. Callable
+43. Future 简单实现
+	1. Future f= new Future();
+	2. f.set(T)
+		1. sync
+		2. notify
+	3. f.get()
+		1. syn
+		2. wait
+
+44. Future源码
+	1. Callable<T>  接口, 功能接口 只有一个抽象方法
+		1. call() throws Exception : ()->T
+	2. FutureTask implements RunnableFuture extends
+		1. 继承关系
+			1. FutureTask<T> implements RunnableFuture<T>
+			2. RunnableFuture<T> extends Runaable,Future<T>
+		2. 构造方法
+			1. FutureTask(Callable)
+			2. FutureTask(Runable,T result)
+				1. Runable,result 转成 callable对象
+				2. 先调用 run,后返回result
+		3. 成员变量
+			1. callable
+			2. state	
+				1. new =0
+				2. Completing
+				3. nomal
+				4. exceptional
+				5. canceled
+			2. outcome 
+				1. 异常
+				2. 结果 
+		4. run方法
+			1. 判断状态 new  ,
+				1. 不为new 异常
+			2. callable不空, 调用call方法,接受返回值
+			3. ran=true
+			4. 异常
+				1. ran=false
+				2.   
+			5. ran成功 调用 set(result)方法	
+				1. 结果赋值 outcome  = result
+				2. 
+		5. get方法
+			1. while state <-= completing
+				1. awaitDone 等待
+					1. 创建WaitNode
+						1. thread
+						2. next
+					2. node放入等待队列
+					3. LockSupport.park()
+					4. 知道state>completing 
+						1.  return state
+			2.  report
+				1.  s== NORMAL 正常 ,返回outcome
+				2.  异常,抛异常
+		6. set
+			1. outcome=v
+			2. finnishCompletion
+				1. while WaitNode !=null
+					1. WaitNode next
+					2. LockSupport.unpark
+		7. 
+	3. Thread
+
+45. Fork/Join框架
+	1. 简介
+		1. 多程程目的
+			1. 提高程序性能
+			2. 充分利用cup性能
+		2. 多cpu分块
+		3. fork 分块求和  join 合并结果
+	2. 类
+		1. abstract class ForJoinTask<T>  implememts Future<T>: 返回值
+			1. abstract class RecursiveTask<T>
+				1. compute()  : ()->T
+		2.  ForkJoinPool
+			1.  submit(ForJoinTask); (ForJoinTask)->  Future<T>
+		3.  
+```
+pulic class Demo extends RecursiveTask<Integer>{
+
+int begin =1;
+int end =100;
+@Override
+public Integer compute compute(){
+	int sum = 0;
+	if(end-gebin<=2){
+		for(int i =begin; i<=end;i++){
+			sum+=i;
+		}
+		
+	}
+	else{
+		//拆分
+		d1 = new Demo(begin,(begin+end)/2)	
+		d2 = new Demo((begin+end)/2+1 ,end)			
+		d1.fork
+		d2.fork		
+		sum = d1.join+ d2.join
+
+	}
+	return  sum;
+}
+
+
+ForkJoinPool poll = new ForkJoinPool(); `` new ForkJoinPool(3) 大小3个线程
+Future<Integer> futrue= pool.submit(new Demo);
+future.get();
+
+}
+```		
+	
+	
+
+	* Runable run 是被线程调用的,在run方法是异步执行的
+	* Callable call 不是异步执行的,是Future在异步run方法里面调用的,线程中的耗时操作
+
+
+
 
 
 
