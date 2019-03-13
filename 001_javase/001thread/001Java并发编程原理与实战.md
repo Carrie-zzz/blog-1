@@ -807,6 +807,11 @@
 		7. 
 	3. Thread
 
+
+	* Runable run 是被线程调用的,在run方法是异步执行的
+	* Callable call 不是异步执行的,是Future在异步run方法里面调用的,线程中的耗时操作
+
+
 45. Fork/Join框架
 	1. 简介
 		1. 多程程目的
@@ -829,7 +834,7 @@ int end =100;
 @Override
 public Integer compute compute(){
 	int sum = 0;
-	if(end-gebin<=2){
+	if(end-bebin<=2){
 		for(int i =begin; i<=end;i++){
 			sum+=i;
 		}
@@ -839,8 +844,8 @@ public Integer compute compute(){
 		//拆分
 		d1 = new Demo(begin,(begin+end)/2)	
 		d2 = new Demo((begin+end)/2+1 ,end)			
-		d1.fork
-		d2.fork		
+		d1.fork();
+		d2.fork();		
 		sum = d1.join+ d2.join
 
 	}
@@ -855,14 +860,68 @@ future.get();
 }
 ```		
 	
+46. 同步容器与并发容器
+	1. 同步容器 : 以前所有的容器 vector 数组,集合
+		1. 线程不安全		arraylist, HashMap
+		2. 性能差   		vector , Hashtable
+	2. 并发容器 : jdk1.5  CopyOnWriteArrayList  
+		1. 解决并发
+	
+	1. Vector ArrayList
+		1. add方法 
+			1.  Vector 添加synchronized
+		2. arraylist转成安全 
+			* Collections.synchronizedList(list)
+				* new SynchronizedList(list)
+					* add方法 也是和vector一样 ,添加了 synchronized 锁
+					* 方法锁  改到了 代码块锁
+	2. Hashtable  HashMap
+		1. put方法   
+			1. Hashtable 添加synchronized
+			2. HashMap	没有
+		2. HashMap转成安全
+			* Collections.synchronizedMap(map)  
+				* new SynchronizedMap(map);
+					* put方法  也是和 Hashtable 一样 ,添加了 synchronized 锁
+					* 方法锁  改到了 代码块锁
+	
+	1. Vector -> ArrayList -> CopyOnWriteArrayList
+		1. 读 没问题
+		2. 写 copy源数据
+	2.  Hashtable  HashMap-> ConcurrentHashMap
+		1. Map 分段分去
+		2. put 分段锁,不全部锁
+		
+47. 并发容器 CopyOnWriteArrayList
+	1. 写操作
+	2. 先拷贝 一份数组
+	3. 然后操作新数组 ,在新数组添加
+	4. 最后 改变原数组的指向,指向新数组
+
+	1. add
+		1. lock.lock();  //全局的 ReentrantLock 排他锁
+		2. Object[] newA=  Arrays.Copy(oldObjs,len+1);  //新数组 长度加1
+		3. newA[len]=e;
+		4. setArray(newA); // array = newA;
+		5. return true;
+	2. remove(index)
+		1. 加锁
+		2. 获取数组
+		3. 移除  
+			1. copy	 开始的
+			2. copy 结束的 
+	
+	类似读写分离
+	读效率高,写都需要copy内存,写多内存消耗大
+
+48. 并发容器   非阻塞队列 ConcurrentLinkedQueue   ConcurrentHashMap
+	1. 非阻塞队列 ConcurrentLinkedQueue
+		1. 
+	2. 2
 	
 
-	* Runable run 是被线程调用的,在run方法是异步执行的
-	* Callable call 不是异步执行的,是Future在异步run方法里面调用的,线程中的耗时操作
-
-
-
-
+49. 1
+50. 1
 
 
 
