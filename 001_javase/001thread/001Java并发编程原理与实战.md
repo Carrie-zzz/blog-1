@@ -899,7 +899,7 @@ future.get();
 	4. 最后 改变原数组的指向,指向新数组
 
 	1. add
-		1. lock.lock();  //全局的 ReentrantLock 排他锁
+		1. ReentrantLock lock.lock();  //全局的 ReentrantLock 排他锁
 		2. Object[] newA=  Arrays.Copy(oldObjs,len+1);  //新数组 长度加1
 		3. newA[len]=e;
 		4. setArray(newA); // array = newA;
@@ -915,14 +915,107 @@ future.get();
 	读效率高,写都需要copy内存,写多内存消耗大
 
 48. 并发容器   非阻塞队列 ConcurrentLinkedQueue   ConcurrentHashMap
-	1. 非阻塞队列 ConcurrentLinkedQueue
-		1. 
+	1. 线程安全
+		1. synchronized
+		2. volatile
+		3. cas
+	1. 非阻塞队列 ConcurrentLinkedQueue  implements Queue
+		1. head tail = new Node(null);  //第一个数据null
+		1. 入队	offer
+			1. p = t =tail ;
+			2. q= p.next();
+			3. q==null ->  p.next=newNode
+			4. 奇数节点 ,tail是指向最后的,然后直接 
+				1. p = t =tail ; 
+				2. p.next=newNode
+		2. 出队	poll
+			1. p=h=head 
+			2. q=p.next
 	2. 2
-	
 
-49. 1
-50. 1
+49. 阻塞队列 BlockingQueue
+	1. 使用 生产者,消费者模型
+		1. 消费者没有的时候,等待
+	2. BlockingQueue<T>接口
+		1. ArrayBlockingQueue
+		2. LinkedBlockingQueue
+		3. ProrityBlockingQueue
+		4. DelayQueue
+			1. add(t)  满了抛出异常
+			2. remove  没有抛出异常
+			3. put		阻塞
+			4. take		阻塞
+			5. offer	有返回值,boolean
+			6. poll		有返回值,t
+	3. 底层
+		1. put
+			1. 锁上  ReentrantLock lock.lockInterruptibly();
+			2. 如果 while count=-items.length  notFull.await();  //count实际长度,items.length max大小
+			3. enqueue(e)
+				1. notEmpty.signal();
+			4. finaly 释放锁
+		2. take
+			1. 锁上  ReentrantLock lock.lockInterruptibly();
+			2. while count==0 notEmpty.await
+			3. 	dequeue()  出队列
+				1. 	notFull.signal();
+			4. 	finaly 释放锁
 
+
+50. 消息队列
+	1. 生产者,消费者模型
+	2. 模式
+		1. 点对点 
+			1. 
+		2. 发布-订阅
+			1. 
+
+
+51. 并发容器    ConcurrentHashMap  
+	1. 重复 49节
+
+52. 线程池的原理与使用
+	1. 线程池概述
+		1. 什么是线程池
+			1. 任务放入线程池中调度
+			2. 不关心,调度
+		2. 为什么要用线程池
+		3. 好处
+			1. 降低资源消耗,避免线程的创建和销毁造成的消耗
+			2. 提高响应速度,没有创建过程,直接执行任务
+			3. 提高线程的可管理性. 
+					线程是稀缺资源,如果无限制的创建,不仅会消耗系统资源,
+					还会降低系统稳定性,使用线程池可以进行统一的分配,调优和监控.但是
+					做到合理利用xiancc,bixu对其原理了如指掌
+	2. 案例
+		1. ThreadPoolExecutor threadPoll = new ThreadPoolExecutor()
+			1. ThreadPoolExecutor 继承了 AbstractExecutorService
+				1. 构造参数
+					1. corePoolSize	初始化线程池大小
+					2. maxPoolSize	最大
+					3. keepAliveTime 存活时间
+					4. unit			存活单位	TimeUnit.Days
+					5. workQueue	阻塞队列	 ArrayBrokingQueue
+				2. 提交线程
+					1. threadPool.execute(runnable..) 
+				3. 策略	
+					1. 饱和策略 RejectedExecutionHandler:
+						1. 当线程和线程池都满了,说明线池处于饱和状态,不洗采用一种策略处理提交的新任务
+						2. 默认是 AbortPolicy ,无法处理新任务时抛出异常
+							1. CallerRunsPolicy
+							2. DiscardOldestPolicy
+							3. DiscardPolicy
+					2. 2  
+			2. AbstractExecutorService 实现了 ExecutorService
+				1. 
+			3. ExecutorService 继承了 Executor 接口
+				1. shutdown
+				2. submit(Callable<T>)
+			4. Executor
+				1. execute(Runnable command)
+
+
+53. Executor框架原理
 
 
 1. CopyOnWriteArrayList 写少读多场景  ,写的时候加锁 lock了,否则copy出多个list
