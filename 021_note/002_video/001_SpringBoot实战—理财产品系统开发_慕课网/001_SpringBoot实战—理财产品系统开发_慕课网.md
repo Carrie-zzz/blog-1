@@ -635,11 +635,280 @@ public interface SignText{
 			1. 
 	3. 对账流程
 		1. 获取对账文件
+			1. 生成对账文件
+			2. 下载
+			3. 解析
+			4. 入库
+		2. 对账
+			1. 本方基准 ,查对方
+			2. 对方基准 ,查本方
+			3. 记录差错
+			4. 对账结果
+				1. 成功: 轧差
+				2. 失败: 人工处理
+		3. 平账
+			1. 轧差
+			2. 人工处理
+	4. 定时执行
+		1. 基本三次  ,状态 成功了,就不生成
+5. 对账文件 字段
+	1. 订单id,外部订单id,渠道id,渠道用户id,产品id,订单类型,账户,创建时间 (已金融公司为准备,自己)
+	
+6. 生成对账文件,对账表
+	1. 对账Dao  
+		1. extends JpaRepository<VerificationOrder,String>,JpaSpecifucationExecutor<VerificationOrder>
+		2. 自定义sql
+			1. 在dao接口方法上面,添加 @Query(value="sql  ?1  ?2",nativeQuery=true)
+			2. 参数 ?n n从1开始
+			3.   
+	2. 生成对账文件
+		1. List换行符号System.getProperty("line.separator", "\n");
+		2. String.join(System.getProperty("line.separator", "\n") , lists );
+	
+7. 解析对账文件
+	1. 解析对方账单文件
+		1. parseLine(line)  (String)->Order
+		2. 转义  "\\|"  "\n"
+	2. 保存对方账单订单数据
+		1. saveOrders
+8. 对账
+	1. 常见问题
+		1. 长款 Excess
+			1. 自己有,对方没有
+			2. 自己订单 left join 外部订单
+		2. 漏单 MISS
+			1. 对方有,自己没有
+			2.  外部订单 left join 自己订单
+		3. 不一致 Different
+			1. 金额,订单等等 不一致
+			2. 自己订单 left join 外部订单
+			3. 所有字段串联 比较
+				1. CONCAT_WS("|",fields1,f2...) != CONCAT_WS("|",fields1,f2...)
+	2. 优化 数据量比较大的情况
+		1. 生成,解析文件分批次  分时间段
+		2. sql一定不要主库执行!!! 在备份或者读库执行
+		3. 避开高峰期
+		4. 用sql,java程序,nosql比较
+9. 平账
+	1. 收到异常,人工进行处理
+	2. 轧差 : 求差值,然后进行转账
 
-5. 5
-6. 1
-7. 1
-8. 
+10. 定时对账
+	1. springboot 定时任务
+		1. 在main类上面添加 @EnableScheduling
+		2. 在task类上添加@Component 
+		3. 在task类下面方法 上添加 @Scheduled(cron = "0 30 1,3,5 * * ?")
+			1. @Scheduled	
+				1. cron 表达式  在线编辑	http://cron.qqe2.com/
+					1.  秒 分 时 日 月 周 年
+	2. 问题
+		1. 多部署(重复执行,冲突)
+		2. 应用不可用()
+		
+		1. quartz 解决	
+		2. spring-boot-start-quartz
+
+11. Jpa多数据源	介绍
+	1. 主,备库  读写库
+		1. mysql 自带 主从复制
+		2. 三方框架 otter  阿里开源框架
+	2. spring-data-jpa  
+		1. [自动配置](https://docs.spring.io/spring-data/jpa/docs/2.1.5.RELEASE/reference/html/#jpa.java-config)
+			1. 注解
+				1. @EnableJpaRepositories
+					1. entityManagerFactoryRef
+					2. transactionManagerRef
+				2. @Primary
+				3. @Configuration
+				4. @EnableJpaRepositories
+			2. 类
+				* DataSource 	dataSource
+				* LocalContainerEntityManagerFactoryBean entityManagerFactory
+				* PlatformTransactionManager transactionManager
+		2. spring boot[Data access](https://docs.spring.io/spring-boot/docs/2.1.3.RELEASE/reference/htmlsingle/#howto-data-access)
+		3. spring-boot-autoconfigurejar
+			1. data/jpa/JpaRepositoriesAutoConfiguration
+
+12. Jpa多数据源	配置
+	1. 修改配置yml文件
+		
+			spring.datasource.primary.url="jdbc:mysql://0.0.0.:3306/t1"
+			spring.datasource.backup.url="jdbc:mysql://0.0.0.:3306/t2"
+
+	2. 编写配置类 @Configuration
+	
+			@Autowired
+			private JpaProperties properties;
+			// 配置数据源
+			@Bean
+			@Primary
+			@ConfigurationProperties("srping.datasource.primary")
+			public DataSource primaryDataSource(){
+				return DataSourceBuilder.create().build();
+			}
+			@Bean
+			@ConfigurationProperties("srping.datasource.backup")
+			public DataSource backupDataSource(){
+				return DataSourceBuilder.create().build();
+			}
+			// 实体管理
+			@Bean
+			@ConfigurationProperties("srping.datasource.backup")
+			public LocalContainerEntityManagerFactoryBean primaryEntityManagerFactoryBean(EntityManagerFactoryBuilder builder  ,@Qualifier("primaryDataSource") DataSource dataSource){
+				return builder
+				.dataSource(dataSource)
+				.packages(Order.class)
+				.properties( getX(dataSource) )  //
+				.persistenceUnit("primary").build();
+			}
+			
+			@Bean
+			@ConfigurationProperties("srping.datasource.backup")
+			public LocalContainerEntityManagerFactoryBean primaryEntityManagerFactoryBean(EntityManagerFactoryBuilder builder  ,@Qualifier("backupDataSource") DataSource dataSource){
+				return builder
+				.dataSource(dataSource)
+				.packages(Order.class)
+				.properties( getX(dataSource) )  //
+				.persistenceUnit("backup").build();
+			}
+			// 事物管理  通过 entityManagerFactory.getObject();
+			//primaryConfiguration
+			
+			@EnableJpaRepositories(basePackageClasses=XxOrderRepository.class,
+			entityManagerFactoryRe="" , transactionManagerRef="")
+			public class PrimaryConfiguration{}
+
+
+ 
+13. 小问题
+	1. 在 entityManager,transactionManager 添加 @Primary
+	2. 两个Configuration ,primary和 backup 扫描重复只能一个生效
+		1.  把2个 repository 放入两个包中,各自扫描各自的
+	  
+14. JPA 读写分离
+	1. 不容数据源,相同 repository
+		1. 添加而外接口,继承
+		2. 修改源码
+	2. 添加而外接口,继承
+		1. Configuration配置类扫描 文件夹下面,新建一个接口
+			1. 如果在primar下,jpa就是连接的 primary主库
+			2. 如果在 backup 下,jpa就是连接的 backup 主库
+			3. 有两个 repository了~~
+
+15. 修改源码
+	1. JpaRepositoriesAutoConfiguration->JpaRepositoriesAutoConfigureRegistrar-> @EnableJpaRepositories->JpaRepositoriesRegistrar->父类
+	2. String beanName
+	3. 在src下新建包和 源码 一直,创建完全一致的类
+		1. 当工程有对应的类的时候,优先加载对应的类
+	4. 修改源码逻辑,获取
+	
+
+
+
+# 第八章 安全#
+----------
+1. tyk 网管
+	1. 介绍
+		1. 开源,轻量级,快速可伸缩的api网关
+		2. 支持配合和限速
+		3. 支持认证和数据分析
+		4. 支持多用户多组织
+		5. restful api
+	2. 官网https://tyk.io/
+	3. docker 安装
+	
+2.  api
+	1.  api
+		1.  通过swagger json 获取api 源 ,  
+				1.  http://swagger?group=controller
+	2.  访问控制
+		1.  使用授权编码
+			1.  System Management- > Apis-> Edit-> 最下面
+			2.  authentication mode 选择 auth token
+			3.  选择是否 request或者cooki 携带
+		2.  授权编码管理
+			1.  System Management- > keys -> Access Rights
+		3. 接口授权
+			1. PortalManagement->settings
+	3.  节流 
+		1.  限速 rate limit  
+			1.  10次/s  第一次,第二次 时间小于1s count++,大于1s count=0
+		2.  配额 quotas  
+			1.  10000次/day
+			2.  总次数,剩余次数,重置周期,下次重置时间
+		3.  api
+		4. System Management- >keys -> rate limiting
+	4.  其他功能
+		1.  统计分析
+			1.  api访问量
+			2.  key访问量
+			3.  
+		2.  常用配置
+			1.  monitor
+		3.  
+	5.  框架运行
+		1. 网络
+		2. 服务 gateway dashboard/portal
+		3. redis	pump	mongodb
+	
+7. https
+	1. 介绍
+		1. http 缺点 , SSL/TLS
+		2. SSL/TLS
+			1.  安全套接层/传输层安全协议
+			2. SSL广泛应用,后标准化成TLS
+			3. 包含 非对称加密+对称加密+散列算法
+		4. http s  = http +ssl
+			1. 握手过程
+				1. 客户端 发送 服务端, TLS版本,加密套件,随机数A,压缩算法等
+				2. 服务端 发送 客户端, 选择(协议,加密,压缩算法),随机数B,证书连接
+					1. 证书链
+						1. 根证书 root
+						2. 中间证书 intermediates
+						3. 服务自己的证书 end-user
+					2.  chrom->...->设置->高级->管理证书
+					3.  中间证书颁发机构,受信任的根证书颁发机构
+				3. 客户端 , 验证证书,随机数C,计算的到协商秘钥
+				4. 客户端 发送 服务端 , 公钥(随机数c),协商秘钥(之前的所有信息hash值)
+					1. 协商秘钥 对称加密
+				5. 	服务端 发送 客户端, 协商秘钥(之前所有信息的hash值)	
+			
+	2. https 证书 部署
+		1. 前提 域名+公网ip
+		2. 购买证书/免费 Let's Encrypt
+		3. 修改服务器配置
+
+	3. spring boot https
+		1. jdk 指令生成证书
+			1. keytool -genkeypair -alias "tomcat' -keyalg "RSA" -KEYSTORE "d:/"
+			2. 秘钥
+			3. 重复
+			4. 组织....
+	4. 改springboot 配置
+		1. application.yml
+			1. server.ssl.key-store=file:d:/tomcat.keystore
+			2. server.ssl.key-password=上面的秘钥
+	5. 浏览器
+		1. F12 -> Security
+
+# 第九章 springboot 升级2.0 #
+----------
+1. springboot 2.0
+	1. 新增特性
+		1. 支持http2
+	2. 代码重构
+	3. 配置改变
+2. 升级
+	1. jdk/gradle/dependencies.gradle
+	2. 配置文件
+		1. server.servlet.context-path=/order
+	3. 相关引用路径
+	4. 代码
+		1. jpa  extends CrudRepository<T,Id>
+3. 升级
+	1. 
+
+
 
 
 
