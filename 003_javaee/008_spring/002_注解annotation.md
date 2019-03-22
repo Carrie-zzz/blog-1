@@ -110,11 +110,14 @@
 		* @scope	
 			1. singleton :单例(默认)
 			2. prototype :多列
+
+![1](./img/bean_scope.jpg)
+
 	5. 生命周期
 		* @PostConstruct :创建init-method
 		* @PreDestroy	 :销毁destroy-method
 
-
+ 
 
 
 ----------

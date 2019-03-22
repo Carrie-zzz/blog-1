@@ -1,5 +1,6 @@
 
 ![1](./sort_1.jpg)
+
 https://www.cnblogs.com/0201zcr/p/4764427.html
 # 交换排序 #
 ## 冒泡 ##
@@ -24,6 +25,8 @@ https://www.cnblogs.com/0201zcr/p/4764427.html
     }
 ```
 ## 快排 ##
+1. 快排 不适合 有序数据排序!
+2. 
 ```
    public static int getMiddle(int[] numbers, int low, int high) {
         // 第一个数默认中轴

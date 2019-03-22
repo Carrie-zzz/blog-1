@@ -411,6 +411,7 @@ https://www.cnblogs.com/yxnchinahlj/archive/2012/02/24/2366110.html
 			使用${}:拼接符
 			Caused by: java.sql.SQLException: Parameter index out of range (1 > number of parameters, which is 0).
 		-->
+
 		<select id="selectByNameLike2"  parameterType="String" resultType="com.huaxin.bean.HxUser">
 			select * from hxuser where name like '%#{name}%'
 		</select> 

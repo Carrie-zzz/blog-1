@@ -1,7 +1,12 @@
 # 大纲 #
 
+1. 锁
+	1. 排他性
+	2. 阻塞性
+	3. 可重入性
 
-
+分布式锁	
+https://www.cnblogs.com/seesun2012/p/9214653.html
 
 ----------
 
@@ -196,7 +201,7 @@
 				System.out.println("b");
 			}
 
-	3. 自旋锁:空转cpu,等待执行
+	3. 自旋锁:空转cpu,等待执行,避免线程切换
 		* 所有线程执行完毕后打印ok
 			* 主线程自旋等待
 
@@ -424,7 +429,7 @@
 			1. state >>> 16  
 			2. 高位读锁
 			3. setState(c+ 1<<16)
-		3. 读锁的个数
+		3. 读锁的个数(  好像反了~~   重入次数是 HoldCounter)
 			1. 底层使用ThreadLocal<HoldCounter>子类 ,每个线程创建一个,保存在
 				1. HoldCounter.count++  每个读线程的重入次数
 			2. readHolds
@@ -950,7 +955,7 @@ future.get();
 	3. 底层
 		1. put
 			1. 锁上  ReentrantLock lock.lockInterruptibly();
-			2. 如果 while count=-items.length  notFull.await();  //count实际长度,items.length max大小
+			2. 如果 while count==items.length  notFull.await();  //count实际长度,items.length max大小
 			3. enqueue(e)
 				1. notEmpty.signal();
 			4. finaly 释放锁
@@ -986,41 +991,335 @@ future.get();
 			3. 提高线程的可管理性. 
 					线程是稀缺资源,如果无限制的创建,不仅会消耗系统资源,
 					还会降低系统稳定性,使用线程池可以进行统一的分配,调优和监控.但是
-					做到合理利用xiancc,bixu对其原理了如指掌
+					做到合理利用线程池,必须对其原理了如指掌
 	2. 案例
 		1. ThreadPoolExecutor threadPoll = new ThreadPoolExecutor()
 			1. ThreadPoolExecutor 继承了 AbstractExecutorService
 				1. 构造参数
-					1. corePoolSize	初始化线程池大小
-					2. maxPoolSize	最大
+					1. corePoolSise
+					2. ze	基本大小 线程池 
+						1. 当提交一个任务到线程池时，线程池会创建一个线程来执行任务，即使其他空闲的基本线程能够执行新任务也会创建线程，
+						2. 等到需要执行的任务数大于线程池基本大小时就不再创建
+					2. maxPoolSize	最大线程数,如果无界队列queue,这个参数无效
 					3. keepAliveTime 存活时间
+						1. 线程工作空间后,报错的存活时间
+						2. 如果任务很多,执行时间很短,可以调大这个时间,提高线程的利用率
+						3. 等于0的时候,不进行销毁
 					4. unit			存活单位	TimeUnit.Days
-					5. workQueue	阻塞队列	 ArrayBrokingQueue
-				2. 提交线程
+					5. workQueue	阻塞队列	 runnableTaskQueue
+						1. ArrayBrokingQueue
+						2. LinkedBrokingQueue
+						3. SynchronousQueue
+						4. PriorityQueue
+					6. RejectedExecutionHandler 饱和策略
+						1. 
+					7. ThreadFacory
+						1. 可以设置创建线程的工程,可以通过工厂给每个创建出来的线程设置名字,debug和定位问题的时候非常有帮助
+				2. 提交线程 execute 或者 submit
 					1. threadPool.execute(runnable..) 
 				3. 策略	
 					1. 饱和策略 RejectedExecutionHandler:
-						1. 当线程和线程池都满了,说明线池处于饱和状态,不洗采用一种策略处理提交的新任务
+						1. 当 队列 和 线程池 都满了,说明线池处于饱和状态,那么必须采用一种策略处理提交的新任务
 						2. 默认是 AbortPolicy ,无法处理新任务时抛出异常
-							1. CallerRunsPolicy
-							2. DiscardOldestPolicy
-							3. DiscardPolicy
-					2. 2  
+							1. CallerRunsPolicy		只用调用者所在线程来运行任务
+							2. DiscardOldestPolicy	丢弃队列里最近的一个任务,并执行 当前任务
+								1. 
+							3. DiscardPolicy		不处理,丢弃掉
+				4. 内部类
+					1. DiscardOldestPolicy implements RejectedExecutionHandler
+						1.  rejectedExecution 
+					2. Worker extends AbstarctQueueSynchronizer implements Runnable
+						1. 
+				5. 方法
+					1. shutdown()
+						1. 
+					2. execute(runnable)   (Runnable)->void
+						* 1. 如果运行的线程小于corePoolSize,则尝试使用用户定义的Runnalbe对象创建一个新的线程
+						*     调用addWorker函数会原
+						*     
+						*     
+						*     
+						*     
+						*     子性的检查runState和workCount，通过返回false来防止在不应
+						*     该添加线程时添加了线程
+						* 2. 如果一个任务能够成功入队列，在添加一个线城时仍需要进行双重检查（因为在前一次检查后
+						*     该线程死亡了），或者当进入到此方法时，线程池已经shutdown了，所以需要再次检查状态，
+						*    若有必要，当停止时还需要回滚入队列操作，或者当线程池没有线程时需要创建一个新线程
+						* 3. 如果无法入队列，那么需要增加一个新线程，如果此操作失败，那么就意味着线程池已经shut
+						*     down或者已经饱和了，所以拒绝任务
+					3. addWorder
+					4. submit(callable)    (Callable<T>)->Future<T>
+
+
+
+				6. 属性
+					1. AtomicInteger ct1 = new AtomicInteger(ctlOf(RUNNUG,0)); 
+						1. 用来表示线程池的运行状态(整型高3位)
+						2. 用来表示运行的worker数量(第29位)
+					2. private static final int COUNT_BITS= Integer.SIZE -3; //32-3
+						1. 29位的偏移量
+					3.  private static final int capacity = (1<<COUNT_BITS)-1;
+						1.  最大容量 2的29次幂 -1
+					4. 状态  private static final int
+						1. RUNNING = -1 << COUNT_BITS;	//接受新任务并且处理已经进入的阻塞队列的任务
+						2. SHUTDOWN =  0 << COUNT_BITS; // 不接受新任务,但是处理已经进入阻塞队列的任务
+						3. STOP = 1 << COUNT_BITS;		//shutdownNow() 不接受新任务,不处理已经进入阻塞队列的任务并且中断正在运行的任务
+						4. TIDYING = 2 << COUNT_BITS;	// 所有的任务都已经终止,wokerCount=0,线程转换成TIDYINGz状态并且调用terminated钩子函数
+						5. TERMINATED = 3 << COUNT_BITS; //terminated钩子函数已经运行完成
+					5. workerQueue 阻塞队列
+					6. 2
+
 			2. AbstractExecutorService 实现了 ExecutorService
 				1. 
-			3. ExecutorService 继承了 Executor 接口
+			3. 接口ExecutorService 继承了 Executor 接口
 				1. shutdown
 				2. submit(Callable<T>)
-			4. Executor
+			4. 接口Executor
 				1. execute(Runnable command)
+	3. 源码
+		1. 
+
+53. Executor 框架原理
+	1. Executors    (...)-> ExecutorService 
+		1. newCachedThreadPool()   (threadFactoty) 
+			1.  new ThreadPoolExecutor(0,Integer.MAX_VALUE,60L,TimeUnitl.SECOND,new SynchronousQueue<Runnable>())
+			2.  用的时候创建,不用的时候销毁
+			3.  
+		2. newFixedThreadPool() (nThreads) (nThreads,threadFactoty) 
+			1. 固定大小
+			2. new ThreadPoolExecutor(nThreads,nThreads,0,TimeUnitl.MILLSECONDS,new LinkedBlockringQueue<Runnable>())
+			3. ThreadFactory 接口 的newThread方法   (Runnable)-> Thread()
+				1. 调用execute(runnable) 的时候
+				2. 回调 newThread 方法
+				3. 默认 DefaultThreadFactory
+					1. 设置 组,名字,
+					2. 线程优先级(5)
+			4.  饱和策略 RejectedExecutionHandler
+				1. 默认 AbortPolicy() 无法处理新任务时抛出异常
+		3. newScheduledThreadPool(corePoolSize)  ScheduledExecutorService
+			1.  new ThreadPoolExecutor(corePoolSize,Integer.MAX_VALUE,0,NANOSECOND,new DelayedWorkQueue<Runnable>())
+			2.  方法
+				1. execute(run);
+				2. scheduled
+					1. runnable
+					2. delay   
+					3. delay time unit 	延迟单位
+				3. scheduledAtFixedRate		
+				4. scheduledWithFixedDelay  延迟
+		4. newWorkStealingPool();  //1.8 
+			1. new ForkJoinPool(System.getRuntime().availableProcessors().ForkJoinPool.defaultForkJoinWorkerThreadFactory,)
+			2. 放回 ExecutorService
+				1.  
+		5. newSingleThreadPool();
+			1. 单个线程执行, 可以保证单个线程任务挂掉,会重新启动新线程执行任务
+			
+
+54. 简易web服务器
+	1.  ServerSocket
+	2.  
+
+55. 改造 简易web服务器
+	1. 	线程池,创建 线程
+	2. 	pool.execute(new ServerRunnable(socket));
+
+56. JDK8 新增原子操作类 LongAdder
+	1. 介绍
+		1. LongAdder , DoubleAdder
+		2. LongAdder 和 AtomicLong 功能一样的
+		3. LongAdder 高并发 性能更强
+	2. 方法
+		1. add
+			1. Cell[] ->volatile long value
+			2. base
+		2. sum
+		3. intValue
+		4. longValue
+		5. longAccumulate
+	3. 
+
+57. StampedLock
+	1. 介绍
+		1. 对 ReentrantReadWriteLock 的增强
+		2. 写线程会出现饥饿问题 ,  应为 写锁互斥的
+		3. StampedLock 读写不互斥 
+			1. 读的时候发生写操作,重新去读,而不是在写的时候阻塞读
+			2. 乐观锁 读写不互斥
+			3. 悲观锁 读写互斥
+	2. api
+		1. writeLock	()->long	// 阻塞等待
+		2. tryWriteLock		// 立即返回,返回0,没有获取到
+		3. readLock
+		4. tryReadLock		//
+		5. tryOptimisticRead	//获取乐观读锁 ,返回long类型的stamp
+		6. validate    		// 更具 stamp 判断是否修改
+		7. unlock			// 更具 stamp 释放
+		8. tryConvertToWriteLock  // 更具 stamp  , 读锁转成写锁
+		9. tryConvertToReadLock
+
+	3. demo
+		1. 直接new  lock
+		2. 写
+			1.  long stamp = lock.writeLock();
+			2. 操作
+			3. lock.unlockWrite(stamp);
+		3. 读
+			1.  long stamp = lock.readLock();
+			2.  操作
+			3.  lock.unlockRead(stamp);
+		4. 乐观锁
+			1. long stamp = lock.tryOptimisticRead();
+			2. 操作,但是可能别的线程,进行了些操作,需要校验
+			3. if(!lock.validate(stamp)) 如果校验不通过 需要重新读取
+				1. long stampRead = lock.readLock();
+				2. 操作 
+			4. 释放锁
+				1. lock.unlockRead(stamp 或者 stampRead);
+		5. 条件读写互换
+```
+long stamp = lock.readLock();
+while(stamp>0)
+{
+	long writeStamp = lock.tryConverToWriteLock(stamp);
+	if(writeStamp!=0){
+		// 获取成功
+		stamp = writeStamp;
+		//操作...
+		break;
+	}
+	else{
+		// 获取随便,,,先释放读锁,,然后直接获取写锁
+		lock.unlockRead(stamp);
+		lock.writeLock();
+	}
+}
+
+lock.unlock(stamp);
+
+```
+
+58. 重排序
+	1. 什么是重排序
+		1. 编译器和处理器,为了提高程序运行性能,对指令重新排序  代码优化
+		2. 单线程情况下,重排序要 保证数据正确性
+	2. 数据依赖性 as if serial
+		1. 如果存在 数据依赖性, 就不能重排序
+			1. 写后读    
+				1. int a,b,c; a=1/;/写  b=a; // 读
+			2. 读后写
+			3. 写后写
+				1. a=1; a=2
+	3. 指令重排序分类
+		1. 编译器重排序
+		2. 处理器重排序
+	4. 为什么要进行指令重排序
+		1. 提高程序性能
+	5. 指令重拍序所带来的影响
+		1. 单线程
+			1. 提高执行性能
+		2. 多线程
+			1. 当两个数据没有数据依赖性,处理器会对这两行代码指令重排序
+			2. 顺序可能调换
+				1. a=1
+				2. flag=true 
+			2. 
+	6. 竞争与同步
+		1. 
+
+59. happens-before
+	1. 用来指定两个操作的执行顺序,提供跨现场的内存可见性
+		1. 不能确定 a一定在b 前执行 ,只能保证 可见性
+	2. java内存模型中,一个操作执行的结果需要另外一个操作可见,那么两个操作之间必然存在 happens-before关系
+	3. 规则
+		1. 程序顺序规则
+			1. 单个线程中每个操作,总是前一个操作 happens-before于该线程中的任意后续操作
+```
+a=1;  //操作1		1 happens-before 2   传递性  1 happens-before 3 
+b=2;  //操作2  		2 happens-before 3
+c=a+b;//操作2 
+```
+		2. 监视器锁规则
+			1. 对于同一个锁的解锁,总是happens-before于随后对这个锁的加锁
+```
+public void a(){
+lock.lock()
+lock.unclok		  //操作1		1 happens-before 2 
+}
+public void b(){
+lock.lock() //操作2  		
+lock.unclok
+}
+```
+		3. volatile变化规则
+			1. 对一个volatile域的写, happens-before于任意后续对这个volatile的读
+		4. 传递性
+		5. start规则
+			1. a 线程 开启b 线程 ,a里面的代码 happens-before b里面的
+		6. join规则 
+			1. 一个线程a里面,另外一个线程 t.join了, t线程 happens-before a线程
+
+60. 锁的内存语义	 释放,获取
+	1. 锁的释放与获取所建立的happens-before管理
+		1. 释放  在   获取之前
+	2. 锁的释放与获取的内存语义
+		1. 锁除了 让临界区互斥执行外, 还可以让释放锁的线程获取同一个锁的另外线程发送消息
 
 
-53. Executor框架原理
+61. volatile内存语义	读和写
+	1. volatile 读写所建立的happens-before关系
+		1. 写 在 读 之前
+	2. volatile读写的内存语义
+		1. 写的时候,java内存模型,会把本地内存的共享变量 刷新到 主内存中
+		2. 读的时候,java内存模型,会把当前线程的本地内存中的共享变量置为无效,从新到主内存中读取
+62. final域的内存语义
+	1. 写final域的重排序规则
+		1. 禁止把final域的写 重排序到构造方法之外
+		2. 非静态 final 赋值 可以在 
+			1. 声明的时候 ,
+			2. 也可以 在代码块(比构造方法优先执行)
+			3. 也可以在 构造方法里
+			4. 如果在代码块里面赋值,构造方法就不能赋值了!
+		3. java内存模型,禁止编译器把final域的写重排序到构造方法
+		4. 内存屏障, 
+			1. 编译器会在final域的写之后,在构造方法执行完毕前,插入一个内存屏障StoreStore,
+			2. 保证处理器把final域的写操作在构造方法中执行
+
+			1. LoadLoad		load1 loadload load2  1优先2
+			2. StoreStore
+			3. LoadStore
+			4. StoreLoad
+	2. 读final域的重排序规则
+		1. 在一个线程中,初次读对象引用和初次读该对象所包含的final域,java内存模型禁止处理器重排序这两个操作
+		2. 
+	3. final域为静态类型
+		1. static  final
+		2. 没有写
+		3. 
+	4. final域为抽象类型
+		1. 在构造方法内对一个final引用的对象的成员域的写入，
+		2. 与随后在构造方法外把这个被构造对象的引用赋值给一个引用变量，这两个操作之间不能重排序。
+
+63. 问题定位
+	1. 工具  数据  经验
+	2. 
 
 
-1. CopyOnWriteArrayList 写少读多场景  ,写的时候加锁 lock了,否则copy出多个list
+
+
+
+
+
+1. 
+2. 
+3. 
+4. CopyOnWriteArrayList 写少读多场景  ,写的时候加锁 lock了,否则copy出多个list
 2. ReadWriteLock 读写锁, 写与写互斥,读写互斥,读与读不互斥 读与读之间可以并发,读多写少可以提高效率
 3. ConcurrentHashMap 读写都加锁
 4. 
+
+
+
+
+
+
 
 
