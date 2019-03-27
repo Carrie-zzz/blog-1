@@ -211,3 +211,22 @@
 4. web
 	1. java.lang.IllegalStateException: Serialized class com.huaxin.mall.pojo.TbItem must implement java.io.Serializable
 		pojo 除了 Example 的pojo都可能 网络传输
+
+
+
+11. dubbo 集群容错模式
+	1. Failover Cluster：失败重试
+	2. Failfast Cluster：快速失败
+	3. Failsafe Cluster：失败安全
+	4. Failback Cluster：失败自动恢复
+	5. Forking Cluster：并行调用
+	6. Broadcast Cluster：广播调用
+
+12. dubbo 负载均衡
+	1. Random LoadBalance			随机策略。按照概率设置权重，比较均匀，并且可以动态调节提供者的权重。
+	2. RoundRobin LoadBalance		轮循，按公约后的权重设置轮循比率。
+	3. LeastActive LoadBalance		最少活跃调用数，相同活跃数的话 随机，活跃数指调用前后计数差
+	4. ConsistentHash LoadBalance	一致性Hash,，可以保证相同参数的请求总是发到同一提供者
+13. 一致性hash
+	1. https://www.cnblogs.com/xhj123/p/9087532.html
+	2. 顺时钟环

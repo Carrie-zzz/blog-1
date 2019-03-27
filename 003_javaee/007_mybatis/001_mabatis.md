@@ -1,6 +1,5 @@
 # 大纲 #
-
-超链接： [官网](http://spring.io/)
+ [mybatis面试](https://www.cnblogs.com/huajiezh/p/6415388.html)
 
 图片  ： ![ioc](./img/spring01.png)
 
@@ -181,27 +180,139 @@
 [po,pojo](http://www.blogjava.net/vip01/archive/2007/01/08/92430.html)
 https://www.cnblogs.com/yxnchinahlj/archive/2012/02/24/2366110.html 
 
-1. 配置文件
+1. 配置文件 Configuration
+	* 属性
+		* HashMaps<String,MappedStatement> mappedStatements
+	* 方法
+		* newStatementHandler(executor,mappedSatement,paramObj,RowBounds.Default,null,null)
 	* SqlMapConfig.xml:
 		* 全局配置文件
 	* mapper.xml :
 		* 每一张表对应一个
 		* sql写在这个文件里面
 		* 需要在SqlMapConfig.xml 引入才能有效
-2. SqlSessionFactory
+	* 解析过程
+		* xpath 找到 configuration 根节点
+			* xpath 找到 mapper 节点
+				* mapper子节点 匹配 package 获取里面的值
+					* 加载package 下面所有 类  Set<Class> ,然后遍历
+					* 每一个clazz 类型
+						* 是否是接口  clazz.isInterface();
+						* hasMapper  有抛异常,防止 多线程
+						* 生成代理对象 mapperProxyFactory
+							* databaseId
+2. SqlSessionFactoryBuild
+	1. build(inputStream);							
+		1. xpath 解析xpath  核心配置文件  configuration 根节点, 子节点 
+			1. xNode.eval("mappers"); 
+			2. properties	settings	typeAliases	plugins environments
+		2. mappers解析 
+			1. 解析 **package** / resource url /class  子元素
+			2. 找到 包下面 所有 接口 生成 clazz,然后遍历
+			3. 放入map集合中<clazz,new MapperProxyFactory<T>(clazz)> ,通过接口,生成代理对象
+			4. 加载mapper.xml配置文件,读取inputStream,解析 xpath
+				1.  找根标签mapper ,  namespace 
+				2.  标签 擦车   select|insert|update|delete ,遍历
+					1.  解析 ,  include 处理 , selectKey 处理 ,
+					2.  动态sql ?  解析  
+						1. sqlSource  #{xx}占位符 转成 ?
+						2. parametMappings ArrayList<?> 属性名称 模型in 属性类型  //占位符 记录值
+					3.   
+			5. 
+			
+2. SqlSessionFactory		
 	* 会话工厂
-	* 加载配置文件,创建sql会话
+	* 加载配置文件
+	* 创建sql会话
+	* 接口方法
+		* openSession();
+	* 实现类
+		* DefaultSqlSessionFactory(configuration)   // 默认工厂
+			* openSession()
+				* openSessionFramDataSource(ExecutorType default,TransactionIsolation null,AutoCommit false)
+					* 获取 environment
+					* 获取事务工厂
+					* 生成执行器对象 Executor
+					* 返回 DefaultSqlSession (config,executor,autocommit);
 3. sqlSession
 	* 关联mapper中的sql
-4. Executor:
-	* 执行sql
+	* 属性
+		* autoCommit =false
+		* configuration 
+		* cursorList = null
+		* dirty = false	
+			* true  提交
+			* false mybatis回滚
+		* executor = CachingExecutor
+	* 方法
+		* insert("sqlId statement",paramObj);  // 往update 方法调 
+		* delete("sqlId statement",paramObj);  // 往update 方法调 
+		* update("sqlId statement",paramObj);
+			* dirty=true
+			* 通过config配置类  传递sqlId  获取到   MappedStatement
+			* executor.update(mappedState,wrapCollection(parameter))
+				* wrapCollection 判断  是否是 集合 array
+		* commit()
+		* close() 
+4. Executor: 执行器,mybatis 核心
+	* 缓存维护
+	* sql生成
+	* 执行器
+		* SimpleExecutor
+			* 每执行一次update或select，就开启一个Statement对象，用完立刻关闭Statement对象
+		* ReuseExecutor
+			* 执行update或select，以sql作为key查找Statement对象，存在就使用，不存在就创建，用完后，不关闭Statement对象，而是放置于Map<String, Statement>内，供下一次使用。简言之，就是重复使用Statement对象
+		* BatchExecutor
+			* 执行update（没有select，JDBC批处理不支持select），将所有sql都添加到批处理中（addBatch()），等待统一执行（executeBatch()），它缓存了多个Statement对象，每个Statement对象都是addBatch()完毕后，等待逐一执行executeBatch()批处理。与JDBC批处理相同。
+		* CachingExecutor
+			* update(MappedStatement ms , Object paramObj)
+				*  缓存
+				*  delegate.update(MappedStatement ms , Object paramObj)
+					*  doUpdate(MappedStatement ms , Object paramObj)  跑到SimpleExecutor里面去了...
+						*  Statement stmt=null;  
+						*  获取 config
+						*  通过config 获取StatementHandler   ,config.newStatementHandler
+							
+						*  准备 sql  preparedStatement
+							*  参数 设置好
+			* commit 
+				* 	transaction.commit();
+	作用范围：Executor的这些特点，都严格限制在SqlSession生命周期范围内
 5. Mapped Statement
 	* mapper.xml文件中一个sql语句对应一个Mapped Statement对象
-	* sql的id即是Mapped statement的id
-	* 对输入参数进行绑定
-	* 对输出参数进行绑定
-
-
+	* sql的id即是Mapped statement的id 
+	* 对输入参数进行绑定 设置  paramterHandler
+	* 对输出参数进行绑定		resultSetHandler
+	* 属性
+		* id = sqlId 
+		* configuration
+		* resource  = "XxxMapper.xml"
+		* sqlSource  = RawSqlSource-> sql="select * from x ..where id=?"
+6. TypeHandler 类型转换器
+	1. java  数据库 类型转换
+	2. 处理器
+		1. resultSetHandler
+		2. paramterHandler
+	3. 自定义  
+		1. 实现 TypeHandler接口
+		2. 在核心配置文件中,配置
+			1. typeHandlers dtd约束,有**位置顺序** 约束
+			<typeHandlers> <typeHandler  handler="自定义类全路径com.xx.AHandler" javaType="" jdbcType=""/> 
+7. StatementHandler
+	1. PreparedStatementHandler
+		1. 属性
+			1. config
+			2. executor
+			3. mappedStatements
+		2. 方法
+			1. update(stmt)
+				1. stmt 执行
+				2. 返回 影响行数
+8. commit
+	1. commit(false)
+		1. executor.commit
+			* true  提交
+			* false mybatis回滚
 ![](./img/mybatis002.png)
 
 
@@ -433,7 +544,7 @@ https://www.cnblogs.com/yxnchinahlj/archive/2012/02/24/2366110.html
 			* 不能嵌套在单,双引号里面(#{}可以有效防止sql注入)
 			* 自动进行java类型和jdbc类型转换
 			* 如果输入参数是bean?,变量名怎么写?(演示增)
-		* ${变量名}
+		* ${变量名}			表名 使用
 			* 单纯拼接符,不进行jdbc类型转换
 			* 如果输入参数时基本数据类型+string,变量名必须value
 			* 比如 :模糊查询 '%${value}%'
@@ -448,7 +559,7 @@ https://www.cnblogs.com/yxnchinahlj/archive/2012/02/24/2366110.html
 	4. 输入类型
 		parameterType="hashmap"   引用: #{key}、${key}
 		parameterType="Student"     引用: #{property}、${property}  eg:#{name}、${location.city}
-		parameterType="int"       引用: #{随便什么名字}、${随便什么名字} 
+		parameterType="int"       引用: #{随便什么名字}、${...} 
 		parameterType="java.util.ArrayList"	#{list}
 			如果int[]/Integer[]/ArrayList包装在一个类里面,名字property   xxxxX
 				public class QueryBean{

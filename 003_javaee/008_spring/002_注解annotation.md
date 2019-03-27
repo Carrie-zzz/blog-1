@@ -93,16 +93,20 @@
 
 				@Value("${jdbc.url}")
 				String xx;
-		* @Autowired		-- 默认按 类型 进行自动装配
+		* @Autowired		-- 默认按 类型byType 进行自动装配
 			* 如果注入的是对象**类型**
 			* 如果多个类型相同的实体
-				* 优先找变量名相同的实体注入,,如果没有id和变量名相同的,则报错 
-					Caused by: org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'com.spring.dao.UserDao' available: expected single matching bean but found 2: userDao,userDao22	
+				* 优先找变量**名**相同的实体注入,
+					* 如果没有id和变量名相同的,则报错 ,解决方法时，使用required=false
+						Caused by: org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'com.spring.dao.UserDao' available: expected single matching bean but found 2: userDao,userDao22	
+					* 
 			* @Qualifier	-- 强制使用名称注入
+				* @Qualifier("userDao")
 				* 必须要@Autowired一起使用		
 
-		* @Resource				-- 相当于@Autowired和@Qualifier一起使用
-			* 强调：Java提供的注解
+		* @Resource			默认byName	-- 相当于@Autowired和@Qualifier一起使用
+			* @Resource(name="userDao")
+			* 强调：Java提供的注解,不是spring 注解
 			* 属性使用name属性
 			* 当没有name值,当前id值,默认是当前类名首字小写 
 				* UserDao ->   id="userDao"

@@ -67,6 +67,8 @@ spring 整合
 			创建对象的权利,从程序员手里反转到spring->程序员不需要new对象,以后都让给spring!
 	2. 解决的程序耦合性高的问题
 
+	3. 对项目中,所有创建对象监控// 代理类 BeanPostProcessor
+
 ![](./002_IOC.bmp)
 
 
@@ -231,8 +233,20 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 			* 想查看destroy-method的效果，有如下条件
 				* scope= singleton有效
 				* web容器中会自动调用，但是main函数或测试用例需要手动调用（需要使用ClassPathXmlApplicationContext的close()方法）
+	5. factory-bean属性  factory-method
+		1. 可以指定 那个 自定义工厂创建   factory-bean="refBeans"
+		2. factory-method指定  工厂ref引用中的 创建方法
+	6. 静态工厂
+		1. id
+		2. class="xx.AFactory"
+		3. factory-method
 
-
+	
+# bean 后处理器  BeanPostProcessor #
+1. 实现 BeanPostProcessor接口, 编写 
+	1. postProcessBeforeInitialzation	// bean初始化之前
+	2. postProcessAfterInitialization	//
+2.  注册, 不需要id,直接写class
 
 ----------
 

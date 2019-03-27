@@ -207,3 +207,6 @@ Redis客户端下载链接：https://redisdesktop.com/download
 	1. appendonly yes
 	2. 每次操作都会保存
 
+
+
+

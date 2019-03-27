@@ -279,9 +279,13 @@
 	2. OutOfMemoryError
 	2. 直接内存 off-head堆外内存
 		1. Nio 通道,缓存区的io方式, native函数库 直接分配**堆外内存**,DirectBuffer作为内存的引用操作
+			1. allocateDirect
 		2. 不受java虚拟机内存的制约,提高性能
 		3. 受到物理内存制约 也会有 OutOfMemoryError
+			1. clean
 		4. 也是 jvm进程管理的内存, 但是不受GC 回收!应为它不属于 新生代也不属于 老年代
+		5. 使用于需要大内存空间且频繁访问的场合，不适用于频繁申请释放内存的场合
+		6. 访问性能更好，但分配较慢
 29. 对象的创建
 	1. 对象分配内存
 		1. 指针碰撞
@@ -524,7 +528,8 @@ java虚拟机-> 虚拟机内存结构->对象(创建,内存分配,访问定位)-
 		3. Jinfo
 		4. Jmap
 		5. Jhat
-		6. Jstack
+		6. 
+		7. 
 		7. JConsole
 50. jps
 	1. java  process status

@@ -169,9 +169,9 @@ https://www.cnblogs.com/seesun2012/p/9214653.html
 						 */
 						public static Singleton2 getInstance () {
 							// 自旋   while(true)
-							if(instance == null) {
+							if(instance == null) {			// 避免 每次加锁 , 效率问题
 								synchronized (Singleton2.class) {
-									if(instance == null) {
+									if(instance == null) {	// 避免 外面syn等待的线程,唤醒后继续创建
 										instance = new Singleton2();  // 指令重排序
 										// 申请一块内存空间   // 1
 										// 在这块空间里实例化对象  // 2
@@ -190,6 +190,35 @@ https://www.cnblogs.com/seesun2012/p/9214653.html
 	4. 提供获取当前对象方法  getInstance
 
 
+```
+在IoDH中，我们在单例类中增加一个静态(static)内部类，在该内部类中创建单例对象，再将该单例对象通过getInstance()方法返回给外部使用
+class Singleton {  
+    private Singleton() {  
+    }  
+
+    private static class HolderClass {  
+            private final static Singleton instance = new Singleton();  
+    }  
+
+    public static Singleton getInstance() {  
+        return HolderClass.instance;  
+    }  
+
+    public static void main(String args[]) {  
+        Singleton s1, s2;   
+            s1 = Singleton.getInstance();  
+        s2 = Singleton.getInstance();  
+        System.out.println(s1==s2);  
+    }  
+}
+
+由于静态单例对象没有作为Singleton的成员变量直接实例化，因此类加载时不会实例化Singleton，
+第一次调用getInstance()时将加载内部类HolderClass，在该内部类中定义了一个static类型的变量instance，
+此时会首先初始化这个成员变量，由Java虚拟机来保证其线程安全性，确保该成员变量只能初始化一次。
+由于getInstance()方法没有任何线程锁定，因此其性能不会造成任何影响
+
+通过使用IoDH，我们既可以实现延迟加载，又可以保证线程安全，不影响系统性能
+```
 17. 锁
 	1. 非重入锁
 		1. 只允许一个线程进入
@@ -269,6 +298,28 @@ https://www.cnblogs.com/seesun2012/p/9214653.html
 		1. volatile只能保证变量的可见性,不能保证原子性
 		2. volatile使用简单的方法,eg:get set,更简洁,轻量一些
 		3. synchronized可以替代volatile,反之不能
+
+		1.volatile仅能使用在变量级别；
+		   synchronized则可以使用在变量、方法、和类级别的
+		2.volatile仅能实现变量的修改可见性，并不能保证原子性；
+		   synchronized则可以保证变量的修改可见性和原子性
+		3.volatile不会造成线程的阻塞；
+		   synchronized可能会造成线程的阻塞。
+		4.volatile标记的变量不会被编译器优化；
+		   synchronized标记的变量可以被编译器优化
+		5. synchronized 三大特性
+			1. 原子性
+			2. 可见性
+			3. 有序性
+			4. 阻塞
+
+	
+			volatile本质是在告诉jvm当前变量在寄存器（工作内存）中的值是不确定的，需要从主存中读取； synchronized则是锁定当前变量，只有当前线程可以访问该变量，其他线程被阻塞住。
+			volatile仅能使用在变量级别；synchronized则可以使用在变量、方法、和类级别的
+			volatile仅能实现变量的修改可见性，不能保证原子性；而synchronized则可以保证变量的修改可见性和原子性
+			volatile不会造成线程的阻塞；synchronized可能会造成线程的阻塞。
+			volatile标记的变量不会被编译器优化；synchronized标记的变量可以被编译器优化
+
 
 19. 原子类(**jdk5**出现) 
 	1. 原子更新基本类型
@@ -830,7 +881,7 @@ https://www.cnblogs.com/seesun2012/p/9214653.html
 				1. compute()  : ()->T
 		2.  ForkJoinPool
 			1.  submit(ForJoinTask); (ForJoinTask)->  Future<T>
-		3.  
+	
 ```
 pulic class Demo extends RecursiveTask<Integer>{
 
@@ -1007,10 +1058,11 @@ future.get();
 						3. 等于0的时候,不进行销毁
 					4. unit			存活单位	TimeUnit.Days
 					5. workQueue	阻塞队列	 runnableTaskQueue
-						1. ArrayBrokingQueue
-						2. LinkedBrokingQueue
+						1. ArrayBlokingQueue
+						2. LinkedBlokingQueue
 						3. SynchronousQueue
 						4. PriorityQueue
+						5. DelayedWorkQueue
 					6. RejectedExecutionHandler 饱和策略
 						1. 
 					7. ThreadFacory
@@ -1036,10 +1088,6 @@ future.get();
 					2. execute(runnable)   (Runnable)->void
 						* 1. 如果运行的线程小于corePoolSize,则尝试使用用户定义的Runnalbe对象创建一个新的线程
 						*     调用addWorker函数会原
-						*     
-						*     
-						*     
-						*     
 						*     子性的检查runState和workCount，通过返回false来防止在不应
 						*     该添加线程时添加了线程
 						* 2. 如果一个任务能够成功入队列，在添加一个线城时仍需要进行双重检查（因为在前一次检查后
@@ -1129,7 +1177,8 @@ future.get();
 		3. LongAdder 高并发 性能更强
 	2. 方法
 		1. add
-			1. Cell[] ->volatile long value
+			1. Cell[] ->
+			2.  long value
 			2. base
 		2. sum
 		3. intValue
@@ -1301,9 +1350,6 @@ lock.unclok
 63. 问题定位
 	1. 工具  数据  经验
 	2. 
-
-
-
 
 
 
