@@ -1,0 +1,6 @@
+PV(访问量)： 即Page View, 即页面浏览量或点击量，用户每次刷新即被计算一次。
+UV(独立访客)：即Unique Visitor,访问您网站的一台电脑客户端为一个访客。00:00-24:00内相同的客户端只被计算一次。
+
+
+ContextNameSpaceHandler
+BeanNameSpaceHandler

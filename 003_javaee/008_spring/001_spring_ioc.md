@@ -221,10 +221,24 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 	2. class属性			-- Bean对象的全路径
 	3. scope属性			-- scope属性代表Bean的作用范围
 		* singleton			-- 单例（默认值）
-		* prototype			-- 多例，在Spring框架整合Struts2框架的时候，Action类也需要交给Spring做管理，配置把Action类配置成多例！！
+			* ***一个应用只有一个对象的实例。它的作用范围就是整个引用。
+			***生命周期：
+				*对象出生：当应用加载，创建容器时，对象就被创建了。
+				*对象活着：只要容器在，对象一直活着。
+				*对象死亡：当应用卸载，销毁容器时，对象就被销毁了。
+		* prototype			-- 多例，在Spring框架整合Struts2框架的时候，Action类也需要交给Spring做管理，配置把Action类配置成多例！！ 因为action 参数是成员变量!
+			***每次访问对象时，都会重新创建对象实例。
+			***生命周期：
+				*对象出生：当使用对象时，创建新的对象实例。
+				*对象活着：只要对象在使用中，就一直活着。
+				*对象死亡：当对象长时间不用时，被 java 的垃圾回收器回收了。		
 		* request			-- 应用在Web项目中,每次HTTP请求都会创建一个新的Bean
 		* session			-- 应用在Web项目中,同一个HTTP Session 共享一个Bean
 		* globalsession		-- 应用在Web项目中,多服务器间的session
+
+
+
+
 	
 	4. Bean对象的创建和销毁的两个属性配置（了解）
 		* 说明：Spring初始化bean或销毁bean时，有时需要作一些处理工作，因此spring可以在创建和拆卸bean的时候调用bean的两个生命周期方法
@@ -368,6 +382,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 				<list>
 					<value>大红花</value>
 					<value>小红花</value>
+					<bean>a</bean>  //???
+					<ref bean="emp1"/>
 				</list>
 			</property>
 		</bean>
@@ -386,6 +402,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 				<entry key="老大" value="38"/>
 				<entry key="老二" value="28"/>
 				<entry key="老三" value="18"/>
+				<entry key="老三" value-ref=""/>
 			</map>
 		</property>
 	

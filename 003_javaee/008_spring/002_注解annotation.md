@@ -103,13 +103,18 @@
 			* @Qualifier	-- 强制使用名称注入
 				* @Qualifier("userDao")
 				* 必须要@Autowired一起使用		
-
+			* 默认 不允许 null,
+				* 默认不能注入 报错
+				* 可以使用 里面属性  
+					* required=false
 		* @Resource			默认byName	-- 相当于@Autowired和@Qualifier一起使用
 			* @Resource(name="userDao")
 			* 强调：Java提供的注解,不是spring 注解
 			* 属性使用name属性
-			* 当没有name值,当前id值,默认是当前类名首字小写 
+			* 当没有name值,当前id值,默认是当前 类名/字段名??? 首字小写 ,当名字找不到时候,使用byType
 				* UserDao ->   id="userDao"
+			* name属性一旦指定，就只会按照名称进行装配
+
 	4. bean作用范围
 		* @scope	
 			1. singleton :单例(默认)
@@ -138,4 +143,77 @@
 	2. 添加注解
 		1. @RunWith(SpringJUnit4ClassRunner.class)
 		2. @ContextConfiguration("classpath:applicationContext.xml")
-	
+		3. @ContextConfiguration(classes=MyConfiguration.class)
+		4. @ContextConfiguration(locations="classpath:applicationContext.xml")
+
+
+----------
+# 新注解 #
+1. @Configuration
+	1. 从Spring3.0，@Configuration用于定义配置类，可替换xml配置文件
+	2. 相当于<beans>根标签
+	3. 配置类内部包含有一个或多个被**@Bean注解**的方法，这些方法将会被AnnotationConfigApplicationContext或AnnotationConfigWebApplicationContext类进行扫描，并用于构建bean定义，初始化Spring容器
+
+	value:用于指定配置类的字节码 
+		@Configuration(X.class)
+
+2. @Bean注解
+	1. 标注在方法上(返回某个实例的方法)，等价于spring配置文件中的<bean>
+	2. 作用为：注册bean对象
+	3. 主要用来配置非自定义的bean，比如DruidDataSource、SqlSessionFactory
+	4. @Bean 可以不给定 value 属性,默认与标注的**方法名**相同
+	5. 默认作用域为单例singleton作用域，可通过@Scope(“prototype”)设置为原型作用域
+
+```
+		@Bean(value="userService")
+		@Scope(“prototype”)
+		public UserService userService(){
+			return new UserServiceImpl(1,“张三”);
+		}
+```
+3. @ComponentScan
+	* 相当于context:component-scan 标签
+	* 组件扫描器，扫描@Component、@Controller、@Service、@Repository 注解的类。
+	* 该注解是编写在类上面的，一般配合@Configuration注解一起使用。
+
+	* basePackages：用于指定要扫描的包。
+	* value：和basePackages作用一样。
+		@ComponentScan(basePackages="com.xx.spring.service")
+4. @PropertySource
+	***加载properties配置文件
+	***编写在类上面
+	***相当于context:property-placeholder标签
+
+	value[]：用于指定properties文件路径，如果在类路径下，需要写上classpath
+		@PropertySource(“classpath:jdbc.properties”)
+5. @Import
+	***用来组合多个配置类
+	***相当于spring配置文件中的import标签
+	***在引入其他配置类时，可以不用再写@Configuration 注解。当然，写上也没问题。
+
+	value：用来指定其他配置类的字节码文件
+
+6. @Aspect
+	1. 标记 该类 是切面类
+	2. 一般需要和 @Component 组合, 交给 spring 管理
+	3. 需要开启aop自动代理
+		<aop:as[ectj-autoproxy/>
+		@EnableAspactjAutoProxy
+7. @Before
+	1. 切面类 中的 通知 注解
+	2. @Before("webLog()")   // 切入点方法名() , ()不能少
+	3. @Before("execution(* *..*.*ServiceImpl.*(..))")
+
+8. @Pointcut
+	1. 切入点表达式
+	2.  @Pointcut("@annotation(org.infrastructure.common.aop.RequestProcess)") 
+	3.  @Pointcut(""execution(* *..*.*ServiceImpl.*(..))") 
+
+9. @EnableAspectJAutoProxy
+
+
+
+
+
+
+

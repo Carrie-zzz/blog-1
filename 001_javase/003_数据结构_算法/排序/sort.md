@@ -80,12 +80,13 @@ https://www.cnblogs.com/0201zcr/p/4764427.html
         for (int i = 0; i < size; i++) {
             // 从i开始
             int min = i;
-            for (int j = size - 1; j > i; j--) {
-                // 取最小值
-                if (numbers[j] < numbers[min]) {
-                    min = j;
-                }
-            }
+			for (int j = i + 1; j < size; j++) {
+				// 取最小值
+				if (numbers[j] < numbers[min]) {
+					min = j;
+				}
+			}
+
             // 交换
             temp = numbers[i];
             numbers[i] = numbers[min];
@@ -103,7 +104,7 @@ https://www.cnblogs.com/0201zcr/p/4764427.html
 		int j =0;
 		for(int i=0; i<numbers.length;i++){
 			temp=numbers[i];
-			for(j=0;j>0 && temp<numbers[j-1];j--){
+			for(j=i;j>0 && temp<numbers[j-1];j--){
 				//前面大数,往后面移动
 				numbers[j]=numbers[j-1];
 			}		
