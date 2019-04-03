@@ -382,7 +382,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 				<list>
 					<value>大红花</value>
 					<value>小红花</value>
-					<bean>a</bean>  //???
+					<bean class=""></bean>  //Y  springMvc Converter
 					<ref bean="emp1"/>
 				</list>
 			</property>
