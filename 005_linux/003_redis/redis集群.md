@@ -20,7 +20,7 @@
 			1. port	7001			//端口
 			2. daemonize yes		//后端启动
 			3. cluster-enabled  yes //开启集群  把注释#去掉  
-	3. 复制5份,修改端口---从7001到7006
+	3. 复制5份,修改端口---从7001到7006  //三台主服务器，三台从服务器
 	4. 找到:在redis源码文件夹下的src目录下,ruby集群脚本 redis-trib.rb,
 	5. 把redis-trib.rb文件复制到到redis-cluster目录下。
 	6. 安装ruby环境
@@ -213,8 +213,37 @@
 			OK
 			
 			-c（cluster）选项是连接Redis Cluster节点时需要使用的，-c选项可以防止moved和ask异常
+4. 其他
+	1. 集群信息  , 连接上集群 后执行: 
+		1. cluster info
+		2. cluster nodes
+5. 维护节点
+	1. 添加主节点
+		1. ./redis-trib.rb add-node 127.0.0.1:7007 127.0.0.1:7001
+		2. 现在新节点 , 还没有分配卡槽  , cluster nodes 可以查看
+	2. 添加节点后,需要重新分配卡槽
+		1. 连接上集群（连接集群中任意一个可用结点都行）
+		2. ./redis-trib.rb reshard 192.168.10.133:7001
+		3. 输入要分配的槽数量		3000
+		4. 输入接收槽的结点id		id值uuid,需要查看复制
+		5. 输入源结点id			重哪个节点剥离3000个卡槽  ,
+			1.  输入 all  全部
+			2.  输入 done 取消
+		6. yes
 
+	3. 添加从节点
+		1. ./redis-trib.rb add-node --slave --master-id  主节点id   新节点的ip和端口   旧节点ip和端口（集群中任一节点都可以）
+		2. ./redis-trib.rb add-node --slave --master-id  35da64607a02c9159334a19164e68dd95a3b943c 192.168.10.103:7008 192.168.10.103:7001
+			如果原来该结点在集群中的配置信息已经生成到cluster-config-file指定的配置文件中（如果cluster-config-file没有指定则默认为nodes.conf），这时可能会报错：
+			[ERR] Node XXXXXX is not empty. Either the node already knows other nodes (check with CLUSTER NODES) or contains some key in database 0
+			解决方法是删除生成的配置文件nodes.conf，删除后再执行./redis-trib.rb add-node指令
+		3. 7008 成为 master-id指定的7007 的从节点
 
+	4. 删除节点
+		1. ./redis-trib.rb del-node 127.0.0.1:7005 4b45eb75c8b428fbd77ab979b85080146a9bc017
+			[ERR] Node 127.0.0.1:7005 is not empty! Reshard data away and try again.
+			需要将该结点占用的hash槽分配出去（参考hash槽重新分配章节）。
+		2. 
 
 ----------
 
