@@ -43,9 +43,9 @@ https://blog.csdn.net/wxb880114/article/details/81019654
 			* 普通索引	INDEX 			: MySQL中基本索引类型，没有什么限制，允许在定义索引的列中插入重复值和空值，纯粹为了查询数据更快一点。
 			* 唯一索引	UNIQUE INDEX 	: 索引列中的值必须是唯一的，但是允许一个空值
 			* 主键索引	PRIMARY KEY		: 一种特殊的唯一索引，不允许有空值
-		* 组合索引	INDEX MultiIdx
+		* 组合索引	INDEX MultiIdx	(尽量创建组合索引)
 			* 多个字段组合上创建的索引
-			* 遵循**最左前缀**集合!
+			* 遵循**最左前缀**集合!!!!!!`````````
 				* 最左边的列集来匹配行，这样的列集称为最左前缀
 				* id，name，age	
 					* (id，name，age)、(id，name)或者(id)  都会使用索引
@@ -98,7 +98,11 @@ https://blog.csdn.net/wxb880114/article/details/81019654
 	但是我们可以先把需要分页的id查询出来，因为id是主键id主键索引，查询起来还是快很多的，然后根据id连接查询对应的分页数据，可见并不是所有的连接查询都会比
 	单查询要慢，要依情况而定。
 
-
+# where #
+WHERE条件执行顺序（影响性能）
+1. MYSQL：从左往右去执行WHERE条件的。
+	1. 写WHERE条件的时候，优先级高的部分要去编写过滤力度最大的条件语句
+2. Oracle：从右往左去执行WHERE条件的。
 
 # explain #
 https://www.cnblogs.com/gomysql/p/3720123.html
