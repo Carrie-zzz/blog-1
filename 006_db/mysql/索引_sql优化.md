@@ -1,3 +1,8 @@
+# 文件 #
+1. 共享表空 空间   data/ibdata1		undo日志
+2. redo日志		 data/ib_logfile0	data/ib_logfile1
+
+
 # 数据库引擎 #
 1. myIsam
 	1. MyISAM只要简单的读出保存好的行数即可
@@ -154,7 +159,10 @@ https://www.cnblogs.com/gomysql/p/3720123.html
 		1. 表示MySQL根据表统计信息及索引选用情况，估算的找到所需的记录所需要读取的行数
 	10. extra
 		1. 包含不适合在其他列中显示但十分重要的额外信息
+# show profile #
 
-
+1. show profile 和 show profiles 语句可以展示当前会话(退出session后,profiling重置为0) 中执行语句的资源使用情况.
+2. show profiles :以列表形式显示最近发送到服务器上执行的语句的资源使用情况.显示的记录数由变量:profiling_history_size 控制,默认15条
+3. show profile: 展示最近一条语句执行的详细资源占用信息,默认显示 Status和Duration两列
 
 
