@@ -29,7 +29,8 @@ PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
-
+5. 刷新系统服务
+	sudo systemctl daemon-reload
 5. 启动失败
 	* 启动
 		systemctl start tomcat
